@@ -7,10 +7,24 @@ import { Platform } from "@shared/schema";
 import { 
   ShoppingCart,
   Briefcase,
-  Building
+  Building,
+  MoreVertical,
+  RefreshCw,
+  Settings,
+  PauseCircle,
+  PlayCircle,
+  Eye,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "./button";
 import { formatDate } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PlatformCardProps {
   platform: Platform;
