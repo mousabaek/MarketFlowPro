@@ -10,8 +10,7 @@ export interface ThemeConfig {
  */
 export async function updateThemeConfig(primary: string, variant: string, appearance: string): Promise<boolean> {
   try {
-    // In a real app, we would send this to the backend
-    // For now, we'll just manipulate the CSS variables directly
+    // Set CSS variables for immediate feedback
     document.documentElement.style.setProperty(
       "--primary", 
       primary === "#6366F1" ? "240 95% 64%" : 
@@ -23,8 +22,23 @@ export async function updateThemeConfig(primary: string, variant: string, appear
       "240 95% 64%"
     );
     
-    // This simulates a backend call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Make API call to update the theme configuration
+    const response = await fetch('/api/theme', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        primary,
+        variant,
+        appearance,
+        radius: 0.5 // Keep default radius
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update theme configuration');
+    }
     
     return true;
   } catch (error) {
@@ -37,13 +51,25 @@ export async function updateThemeConfig(primary: string, variant: string, appear
  * Gets the current theme configuration
  */
 export async function getThemeConfig(): Promise<ThemeConfig> {
-  // In a real app, we would fetch this from the backend
-  return {
-    primary: '#6366F1',
-    variant: 'professional',
-    appearance: 'system',
-    radius: 0.5
-  };
+  try {
+    const response = await fetch('/api/theme');
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch theme configuration');
+    }
+    
+    const themeConfig = await response.json();
+    return themeConfig;
+  } catch (error) {
+    console.error('Error fetching theme configuration:', error);
+    // Return default theme if fetch fails
+    return {
+      primary: '#6366F1',
+      variant: 'professional',
+      appearance: 'system',
+      radius: 0.5
+    };
+  }
 }
 
 // Theme color options

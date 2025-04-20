@@ -194,6 +194,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platforms/:platformId/freelancer/bidding-stats", FreelancerController.getBiddingStats);
   app.get("/api/platforms/:platformId/freelancer/current-bids", FreelancerController.getCurrentBids);
 
+  // Theme configuration routes
+  app.get("/api/theme", async (req, res) => {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const themePath = path.resolve('./theme.json');
+      const themeData = await fs.readFile(themePath, 'utf8');
+      const theme = JSON.parse(themeData);
+      
+      res.json(theme);
+    } catch (error) {
+      console.error('Error reading theme configuration:', error);
+      res.status(500).json({ error: 'Failed to read theme configuration' });
+    }
+  });
+  
+  app.post("/api/theme", async (req, res) => {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const { primary, variant, appearance, radius } = req.body;
+      
+      if (!primary || !variant || !appearance) {
+        return res.status(400).json({ error: 'Missing required theme properties' });
+      }
+      
+      const themeConfig = {
+        primary,
+        variant,
+        appearance,
+        radius: radius || 0.5
+      };
+      
+      const themePath = path.resolve('./theme.json');
+      await fs.writeFile(themePath, JSON.stringify(themeConfig, null, 2));
+      
+      res.json(themeConfig);
+    } catch (error) {
+      console.error('Error updating theme configuration:', error);
+      res.status(500).json({ error: 'Failed to update theme configuration' });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
 
