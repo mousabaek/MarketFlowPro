@@ -46,6 +46,41 @@
     
     --radius: 0.5rem;
   }
+
+  .dark {
+    /* Main colors for dark mode */
+    --primary: 240 93% 65%; /* #6366F1 slightly lighter indigo */
+    --secondary: 160 84% 39%; /* #34D399 emerald */
+    --background: 224 71% 4%; /* #111827 dark bg */
+    --foreground: 210 20% 98%; /* #F9FAFB light text */
+    --accent: 38 92% 50%; /* #F59E0B amber */
+    
+    /* Standard colors for dark mode */
+    --card: 224 71% 6%;
+    --card-foreground: 210 20% 98%;
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 20% 98%;
+    --primary-foreground: 0 0% 100%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 215 27% 16%;
+    --muted-foreground: 217 10% 64%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 86% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 27% 16%;
+    --input: 215 27% 16%;
+    --ring: 240 95% 64%;
+    
+    /* Sidebar colors for dark mode */
+    --sidebar-background: 224 71% 6%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 240 93% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 27% 16%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 27% 16%;
+    --sidebar-ring: 240 95% 64%;
+  }
 }
 
 @layer base {
