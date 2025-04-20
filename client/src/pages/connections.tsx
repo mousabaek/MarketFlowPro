@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Platform, platformConnectionSchema } from "@shared/schema";
 import { PlatformCard } from "@/components/ui/platform-card";
+import { PlatformDetails } from "@/components/ui/platform-details";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Link2, RefreshCw, ShoppingCart, Briefcase, Building } from "lucide-react";
+import { PlusCircle, Link2, RefreshCw, ShoppingCart, Briefcase, Building, WrenchIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { WolfLogo } from "@/components/ui/wolf-logo";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +53,7 @@ export default function Connections() {
   const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
   const [platformToDelete, setPlatformToDelete] = useState<Platform | null>(null);
   const [platformToRefresh, setPlatformToRefresh] = useState<Platform | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   
   // Fetch platforms
   const { data: platforms = [], isLoading } = useQuery<Platform[]>({
@@ -199,6 +202,123 @@ export default function Connections() {
     });
   };
   
+  // Handle view platform details
+  const handleViewPlatform = (platform: Platform) => {
+    setSelectedPlatform(platform);
+  };
+  
+  // Handle fix platform error
+  const handleFixPlatformError = (platform: Platform) => {
+    toast({
+      title: "Fixing connector error",
+      description: "Applying automatic fix to connection issues..."
+    });
+    
+    // Simulate fixing the error
+    setTimeout(() => {
+      // Update the platform status
+      const updatePlatform = async () => {
+        try {
+          await apiRequest("PATCH", `/api/platforms/${platform.id}`, {
+            status: "connected",
+            healthStatus: "healthy"
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ["/api/platforms"] });
+          
+          toast({
+            title: "Connection fixed",
+            description: `${platform.name} connection has been restored successfully.`
+          });
+        } catch (error) {
+          toast({
+            title: "Error fixing connection",
+            description: "Failed to fix the connection. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      updatePlatform();
+    }, 2000);
+  };
+  
+  // Handle watch platform live
+  const handleWatchLive = (platform: Platform) => {
+    toast({
+      title: "Live monitoring",
+      description: `Starting live monitoring for ${platform.name}...`
+    });
+  };
+  
+  // Handle pause platform
+  const handlePausePlatform = (platform: Platform) => {
+    toast({
+      title: "Pausing connection",
+      description: `Pausing connection to ${platform.name}...`
+    });
+    
+    // Simulate pausing
+    setTimeout(() => {
+      const updatePlatform = async () => {
+        try {
+          await apiRequest("PATCH", `/api/platforms/${platform.id}`, {
+            status: "disconnected"
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ["/api/platforms"] });
+          
+          toast({
+            title: "Connection paused",
+            description: `${platform.name} connection has been paused.`
+          });
+        } catch (error) {
+          toast({
+            title: "Error pausing connection",
+            description: "Failed to pause the connection. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      updatePlatform();
+    }, 1000);
+  };
+  
+  // Handle resume platform
+  const handleResumePlatform = (platform: Platform) => {
+    toast({
+      title: "Resuming connection",
+      description: `Resuming connection to ${platform.name}...`
+    });
+    
+    // Simulate resuming
+    setTimeout(() => {
+      const updatePlatform = async () => {
+        try {
+          await apiRequest("PATCH", `/api/platforms/${platform.id}`, {
+            status: "connected"
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ["/api/platforms"] });
+          
+          toast({
+            title: "Connection resumed",
+            description: `${platform.name} connection has been resumed.`
+          });
+        } catch (error) {
+          toast({
+            title: "Error resuming connection",
+            description: "Failed to resume the connection. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      updatePlatform();
+    }, 1000);
+  };
+  
   // Get platform icon
   const getPlatformIcon = (platformName: string) => {
     const iconProps = { className: "h-12 w-12 text-primary" };
@@ -240,11 +360,12 @@ export default function Connections() {
         </div>
       ) : platforms.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-border">
-          <Link2 className="mx-auto h-12 w-12 text-gray-300" />
+          <WolfLogo className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-2 text-lg font-medium text-gray-900">No connections found</h3>
           <p className="mt-1 text-sm text-gray-500">Get started by connecting to a platform</p>
           <div className="mt-6">
             <Button onClick={() => setIsConnectionDialogOpen(true)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
               Add Connection
             </Button>
           </div>
@@ -257,10 +378,31 @@ export default function Connections() {
               platform={platform}
               onSettings={handlePlatformSettings}
               onRefresh={handleRefreshPlatform}
+              onView={handleViewPlatform}
+              onFixError={handleFixPlatformError}
+              onWatchLive={handleWatchLive}
+              onPause={handlePausePlatform}
+              onResume={handleResumePlatform}
             />
           ))}
         </div>
       )}
+      
+      {/* Platform Details Dialog */}
+      <Dialog 
+        open={!!selectedPlatform} 
+        onOpenChange={(open) => !open && setSelectedPlatform(null)}
+        className="max-w-4xl"
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedPlatform && (
+            <PlatformDetails 
+              platformId={selectedPlatform.id} 
+              onClose={() => setSelectedPlatform(null)} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       
       {/* Add Connection Dialog */}
       <Dialog open={isConnectionDialogOpen} onOpenChange={setIsConnectionDialogOpen}>

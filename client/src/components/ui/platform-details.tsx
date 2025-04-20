@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Platform } from '@shared/schema';
+import { Platform, Activity, Workflow } from '@shared/schema';
 import { 
   Card, 
   CardContent, 
@@ -35,12 +35,12 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
     enabled: !!platformId,
   });
   
-  const { data: activities = [], isLoading: activitiesLoading } = useQuery({
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery<Activity[]>({
     queryKey: ['/api/activities', { platformId }],
     enabled: !!platformId,
   });
 
-  const { data: workflows = [], isLoading: workflowsLoading } = useQuery({
+  const { data: workflows = [], isLoading: workflowsLoading } = useQuery<Workflow[]>({
     queryKey: ['/api/workflows', { platformId }],
     enabled: !!platformId,
   });
@@ -83,9 +83,11 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
             <CardTitle className="text-2xl font-bold flex items-center">
               {platform.name}
               <Badge 
-                className="ml-2" 
-                variant={platform.status === 'connected' ? 'success' : 
-                        platform.status === 'limited' ? 'warning' : 'destructive'}
+                className={`ml-2 ${
+                  platform.status === 'connected' ? 'bg-green-100 text-green-800' : 
+                  platform.status === 'limited' ? 'bg-amber-100 text-amber-800' : 
+                  'bg-red-100 text-red-800'
+                }`}
               >
                 {getStatusText(platform.status)}
               </Badge>

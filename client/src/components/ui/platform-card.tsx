@@ -30,6 +30,11 @@ interface PlatformCardProps {
   platform: Platform;
   onSettings?: (platform: Platform) => void;
   onRefresh?: (platform: Platform) => void;
+  onView?: (platform: Platform) => void;
+  onFixError?: (platform: Platform) => void;
+  onWatchLive?: (platform: Platform) => void;
+  onPause?: (platform: Platform) => void;
+  onResume?: (platform: Platform) => void;
 }
 
 // Function to get platform icon
@@ -88,14 +93,25 @@ const getHealthStatus = (status: string) => {
   }
 };
 
-export function PlatformCard({ platform, onSettings, onRefresh }: PlatformCardProps) {
+export function PlatformCard({ 
+  platform, 
+  onSettings, 
+  onRefresh, 
+  onView, 
+  onFixError, 
+  onWatchLive, 
+  onPause, 
+  onResume 
+}: PlatformCardProps) {
   const icon = getPlatformIcon(platform.name);
   const typeLabel = getPlatformTypeLabel(platform.type);
   const statusClass = getStatusBadgeClass(platform.status || "disconnected");
   const healthStatus = getHealthStatus(platform.healthStatus || "unknown");
+  const isConnected = platform.status === "connected";
+  const hasError = platform.healthStatus === "error";
   
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => onView && onView(platform)}>
       <CardHeader className="p-4 border-b border-border">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -107,9 +123,66 @@ export function PlatformCard({ platform, onSettings, onRefresh }: PlatformCardPr
               <p className="text-xs text-gray-500">{typeLabel}</p>
             </div>
           </div>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}`}>
-            {platform.status ? platform.status.charAt(0).toUpperCase() + platform.status.slice(1) : "Disconnected"}
-          </span>
+          
+          <div className="flex items-center">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${statusClass}`}>
+              {platform.status ? platform.status.charAt(0).toUpperCase() + platform.status.slice(1) : "Disconnected"}
+            </span>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onView && onView(platform); }}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span>View Details</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onRefresh && onRefresh(platform); }}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <span>Refresh Connection</span>
+                </DropdownMenuItem>
+
+                {onWatchLive && isConnected && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onWatchLive(platform); }}>
+                    <Eye className="mr-2 h-4 w-4 text-blue-600" />
+                    <span className="text-blue-600">Watch Live</span>
+                  </DropdownMenuItem>
+                )}
+                
+                <DropdownMenuSeparator />
+                
+                {isConnected && onPause && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPause(platform); }}>
+                    <PauseCircle className="mr-2 h-4 w-4" />
+                    <span>Pause Connection</span>
+                  </DropdownMenuItem>
+                )}
+                
+                {!isConnected && onResume && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onResume(platform); }}>
+                    <PlayCircle className="mr-2 h-4 w-4" />
+                    <span>Resume Connection</span>
+                  </DropdownMenuItem>
+                )}
+                
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSettings && onSettings(platform); }}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                
+                {hasError && onFixError && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onFixError(platform); }} className="text-red-600">
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    <span>Fix Error</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       
@@ -121,7 +194,11 @@ export function PlatformCard({ platform, onSettings, onRefresh }: PlatformCardPr
           </div>
           <div className="flex justify-between text-sm mb-1">
             <span>Workflows</span>
-            <span>{platform.settings && typeof platform.settings === 'object' && 'workflowCount' in platform.settings ? platform.settings.workflowCount : 0} active</span>
+            <span>
+              {platform.settings && typeof platform.settings === 'object' && 'workflowCount' in platform.settings 
+                ? platform.settings.workflowCount 
+                : 0} active
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span>Last Synced</span>
@@ -129,26 +206,19 @@ export function PlatformCard({ platform, onSettings, onRefresh }: PlatformCardPr
           </div>
         </div>
         
-        <div className="flex justify-end">
-          {onSettings && (
-            <Button 
-              variant="ghost" 
-              className="text-sm text-gray-600" 
-              onClick={() => onSettings(platform)}
-            >
-              Settings
-            </Button>
-          )}
-          {onRefresh && (
-            <Button 
-              variant="ghost" 
-              className="text-sm text-primary ml-2" 
-              onClick={() => onRefresh(platform)}
-            >
-              Refresh
-            </Button>
-          )}
-        </div>
+        {hasError && (
+          <div className="p-2 bg-red-50 text-red-700 rounded border border-red-100 text-sm flex items-center mb-2">
+            <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span>Connection error detected. Click to view details.</span>
+          </div>
+        )}
+        
+        {isConnected && (
+          <div className="flex items-center mb-2">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse mr-2"></div>
+            <span className="text-sm text-green-600">AI Agent active</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
