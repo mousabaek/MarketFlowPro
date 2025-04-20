@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { platformConnectionSchema, workflowCreationSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { FreelancerController } from "./controllers/freelancer-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Error handling middleware
