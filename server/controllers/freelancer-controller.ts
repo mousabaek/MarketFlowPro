@@ -102,7 +102,7 @@ export class FreelancerController {
       });
       
       return res.json(profileData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Freelancer.com profile:', error);
       
       // Create error activity
@@ -177,7 +177,7 @@ export class FreelancerController {
       });
       
       return res.json(projectsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching Freelancer.com projects:', error);
       
       // Create error activity
@@ -232,7 +232,7 @@ export class FreelancerController {
       });
       
       return res.json(projectData);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error fetching Freelancer.com project #${req.params.projectId}:`, error);
       
       // Create error activity
@@ -306,7 +306,7 @@ export class FreelancerController {
       });
       
       return res.json(bidData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting bid on Freelancer.com:', error);
       
       // Create error activity
@@ -349,7 +349,7 @@ export class FreelancerController {
       const skillsData = await freelancerApi.getSkills();
       
       return res.json(skillsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Freelancer.com skills:', error);
       return res.status(500).json({ error: 'Failed to fetch skills' });
     }
@@ -380,7 +380,7 @@ export class FreelancerController {
       const statsData = await freelancerApi.getBiddingStats();
       
       return res.json(statsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Freelancer.com bidding stats:', error);
       return res.status(500).json({ error: 'Failed to fetch bidding stats' });
     }
@@ -411,7 +411,7 @@ export class FreelancerController {
       const bidsData = await freelancerApi.getCurrentBids();
       
       return res.json(bidsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching Freelancer.com current bids:', error);
       return res.status(500).json({ error: 'Failed to fetch current bids' });
     }

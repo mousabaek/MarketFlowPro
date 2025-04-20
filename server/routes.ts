@@ -125,10 +125,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create an activity for the new workflow
+      // Get the steps array length safely
+      const steps = (workflow.steps as any[] || []);
+      
       await storage.createActivity({
         type: "system",
         title: `Workflow created`,
-        description: `Created new workflow "${workflow.name}" with ${workflow.steps.length} steps.`,
+        description: `Created new workflow "${workflow.name}" with ${steps.length} steps.`,
         platformId: workflow.platformId,
         workflowId: workflow.id
       });
