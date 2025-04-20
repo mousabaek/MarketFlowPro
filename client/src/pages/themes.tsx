@@ -81,149 +81,149 @@ export default function ThemesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left column: Theme selection */}
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Primary Color</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {themeColors.map((themeColor) => (
-                  <div 
-                    key={themeColor.name}
-                    className={`
-                      border rounded-lg p-4 cursor-pointer transition-all
-                      ${selectedPrimary === themeColor.color ? 'ring-2 ring-primary' : 'hover:border-primary'}
-                    `}
-                    onClick={() => setSelectedPrimary(themeColor.color)}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div 
-                        className={`w-8 h-8 rounded-full ${themeColor.previewColors.primary}`} 
-                      />
-                      {selectedPrimary === themeColor.color && (
-                        <Check className="h-5 w-5 text-primary" />
-                      )}
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Primary Color</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {themeColors.map((themeColor) => (
+                    <div 
+                      key={themeColor.name}
+                      className={`
+                        border rounded-lg p-4 cursor-pointer transition-all
+                        ${selectedPrimary === themeColor.color ? 'ring-2 ring-primary' : 'hover:border-primary'}
+                      `}
+                      onClick={() => setSelectedPrimary(themeColor.color)}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <div 
+                          className={`w-8 h-8 rounded-full ${themeColor.previewColors.primary}`} 
+                        />
+                        {selectedPrimary === themeColor.color && (
+                          <Check className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                      <h3 className="font-medium">{themeColor.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">{themeColor.description}</p>
+                      
+                      <div className="flex space-x-2 mt-3">
+                        <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.primary}`} />
+                        <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.secondary}`} />
+                        <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.accent}`} />
+                      </div>
                     </div>
-                    <h3 className="font-medium">{themeColor.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{themeColor.description}</p>
-                    
-                    <div className="flex space-x-2 mt-3">
-                      <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.primary}`} />
-                      <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.secondary}`} />
-                      <div className={`w-4 h-4 rounded-full ${themeColor.previewColors.accent}`} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Style Variant</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {styleVariants.map((variant) => (
+                    <div 
+                      key={variant.name}
+                      className={`
+                        border rounded-lg p-4 cursor-pointer transition-all
+                        ${selectedVariant === variant.value ? 'ring-2 ring-primary' : 'hover:border-primary'}
+                      `}
+                      onClick={() => setSelectedVariant(variant.value)}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-medium">{variant.name}</h3>
+                        {selectedVariant === variant.value && (
+                          <Check className="h-5 w-5 text-primary" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{variant.description}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={appearance} onValueChange={setAppearance} className="w-full">
+                  <TabsList className="grid grid-cols-3">
+                    <TabsTrigger value="light">Light</TabsTrigger>
+                    <TabsTrigger value="dark">Dark</TabsTrigger>
+                    <TabsTrigger value="system">System</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Style Variant</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {styleVariants.map((variant) => (
-                  <div 
-                    key={variant.name}
-                    className={`
-                      border rounded-lg p-4 cursor-pointer transition-all
-                      ${selectedVariant === variant.value ? 'ring-2 ring-primary' : 'hover:border-primary'}
-                    `}
-                    onClick={() => setSelectedVariant(variant.value)}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-medium">{variant.name}</h3>
-                      {selectedVariant === variant.value && (
-                        <Check className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{variant.description}</p>
+          {/* Right column: Preview and apply */}
+          <div>
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg p-4 bg-background">
+                  <h3 className="text-lg font-semibold mb-2">Wolf Auto Marketer</h3>
+                  
+                  <div className="flex gap-2 mb-4">
+                    <Button 
+                      style={{ backgroundColor: selectedPrimary }}
+                    >
+                      Primary Button
+                    </Button>
+                    <Button variant="outline">Secondary</Button>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={appearance} onValueChange={setAppearance} className="w-full">
-                <TabsList className="grid grid-cols-3">
-                  <TabsTrigger value="light">Light</TabsTrigger>
-                  <TabsTrigger value="dark">Dark</TabsTrigger>
-                  <TabsTrigger value="system">System</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Right column: Preview and apply */}
-        <div>
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg p-4 bg-background">
-                <h3 className="text-lg font-semibold mb-2">Wolf Auto Marketer</h3>
+                  
+                  <div className="border rounded p-3 my-3">
+                    <h4 className="font-medium" style={{ color: selectedPrimary }}>
+                      Primary Text
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      This is how your content will appear with the selected theme.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="h-2 w-3/4 rounded" style={{ backgroundColor: selectedPrimary }}></div>
+                    <div className="h-2 w-1/2 rounded bg-muted"></div>
+                    <div className="h-2 w-5/6 rounded bg-muted"></div>
+                  </div>
+                </div>
                 
-                <div className="flex gap-2 mb-4">
+                <div className="mt-6">
                   <Button 
-                    style={{ backgroundColor: selectedPrimary }}
+                    className="w-full" 
+                    size="lg"
+                    onClick={updateTheme}
+                    disabled={isUpdating}
                   >
-                    Primary Button
+                    {isUpdating ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" /> Apply Theme
+                      </>
+                    )}
                   </Button>
-                  <Button variant="outline">Secondary</Button>
                 </div>
-                
-                <div className="border rounded p-3 my-3">
-                  <h4 className="font-medium" style={{ color: selectedPrimary }}>
-                    Primary Text
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    This is how your content will appear with the selected theme.
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="h-2 w-3/4 rounded" style={{ backgroundColor: selectedPrimary }}></div>
-                  <div className="h-2 w-1/2 rounded bg-muted"></div>
-                  <div className="h-2 w-5/6 rounded bg-muted"></div>
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={updateTheme}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Applying...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" /> Apply Theme
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
       )}
     </div>
   );
