@@ -21,7 +21,7 @@ export function MobileMenu() {
   }, [location]);
 
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-border z-10">
+    <div className="lg:hidden fixed top-0 left-0 right-0 bg-background border-b border-border z-10">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
@@ -52,7 +52,7 @@ export function MobileMenu() {
                   <li>
                     <Link href="/">
                       <a className={`flex items-center p-2 rounded-md ${
-                        location === "/" ? "bg-primary bg-opacity-10 text-primary" : "hover:bg-gray-100 text-gray-900"
+                        location === "/" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
                       }`}>
                         <BarChart2 className="mr-3 h-5 w-5" />
                         <span>Dashboard</span>
@@ -62,7 +62,7 @@ export function MobileMenu() {
                   <li>
                     <Link href="/workflows">
                       <a className={`flex items-center p-2 rounded-md ${
-                        location === "/workflows" ? "bg-primary bg-opacity-10 text-primary" : "hover:bg-gray-100 text-gray-900"
+                        location === "/workflows" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
                       }`}>
                         <svg className="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

@@ -65,7 +65,7 @@ export function Sidebar() {
             <div 
               onClick={() => window.location.href = '/analytics'}
               className={`flex items-center p-2 rounded-md cursor-pointer ${
-                location === "/analytics" ? "bg-primary bg-opacity-10 text-primary" : "hover:bg-gray-100 text-gray-900"
+                location === "/analytics" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
               }`}
             >
               <BarChart2 className="mr-3 h-5 w-5" />
@@ -76,7 +76,7 @@ export function Sidebar() {
             <div 
               onClick={() => window.location.href = '/history'}
               className={`flex items-center p-2 rounded-md cursor-pointer ${
-                location === "/history" ? "bg-primary bg-opacity-10 text-primary" : "hover:bg-gray-100 text-gray-900"
+                location === "/history" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
               }`}
             >
               <History className="mr-3 h-5 w-5" />
@@ -87,7 +87,7 @@ export function Sidebar() {
             <div 
               onClick={() => window.location.href = '/settings'}
               className={`flex items-center p-2 rounded-md cursor-pointer ${
-                location === "/settings" ? "bg-primary bg-opacity-10 text-primary" : "hover:bg-gray-100 text-gray-900"
+                location === "/settings" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
               }`}
             >
               <Settings className="mr-3 h-5 w-5" />
@@ -98,7 +98,7 @@ export function Sidebar() {
         
         {platforms.length > 0 && (
           <div className="mt-8">
-            <h3 className="px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Connected Platforms
             </h3>
             <ul className="mt-2 space-y-1">
@@ -124,7 +124,7 @@ export function Sidebar() {
             </div>
             <div>
               <div className="text-sm font-medium">John Doe</div>
-              <div className="text-xs text-gray-500">john@example.com</div>
+              <div className="text-xs text-muted-foreground">john@example.com</div>
             </div>
           </div>
           <ThemeToggle />
