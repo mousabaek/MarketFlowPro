@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 import { ActivityList } from './activity-card';
+import { PlatformFactory } from '../platforms/platform-factory';
+import { FreelancerApiKeyForm } from '../platforms/freelancer-api-key-form';
 
 interface PlatformDetailsProps {
   platformId: number;
@@ -29,6 +31,7 @@ interface PlatformDetailsProps {
 
 export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [showApiKeyForm, setShowApiKeyForm] = useState(false);
   
   const { data: platform, isLoading: platformLoading } = useQuery<Platform>({
     queryKey: ['/api/platforms', platformId],
@@ -71,8 +74,7 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
   };
 
   const handleFixConnectorError = () => {
-    alert('Fixing connector error...');
-    // Implement error fixing logic here
+    setShowApiKeyForm(true);
   };
 
   return (
@@ -134,81 +136,87 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
         
         <TabsContent value="overview">
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">API Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center">
-                    {getStatusIcon(platform.healthStatus)}
-                    <span className="ml-2">{platform.healthStatus || 'Unknown'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Workflows</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{workflows.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Connection Type</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="capitalize">{platform.type}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Last Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div>{activities[0]?.timestamp ? formatDate(activities[0]?.timestamp) : 'No activity'}</div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="mt-6">
-              <h3 className="text-lg font-medium mb-2">API Details</h3>
-              <div className="bg-gray-50 p-4 rounded-md">
+            {platform.name === 'Freelancer' ? (
+              <PlatformFactory platform={platform} />
+            ) : (
+              <>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">API Key</p>
-                    <p className="text-sm font-mono">•••••••••••••{platform.apiKey?.slice(-4)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">API Secret</p>
-                    <p className="text-sm font-mono">{platform.apiSecret ? '•••••••••••••••' : 'Not set'}</p>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">API Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center">
+                        {getStatusIcon(platform.healthStatus)}
+                        <span className="ml-2">{platform.healthStatus || 'Unknown'}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Workflows</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{workflows.length}</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Connection Type</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="capitalize">{platform.type}</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Last Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div>{activities[0]?.timestamp ? formatDate(activities[0]?.timestamp) : 'No activity'}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="mt-6">
+                  <h3 className="text-lg font-medium mb-2">API Details</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">API Key</p>
+                        <p className="text-sm font-mono">•••••••••••••{platform.apiKey?.slice(-4)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">API Secret</p>
+                        <p className="text-sm font-mono">{platform.apiSecret ? '•••••••••••••••' : 'Not set'}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <h3 className="text-lg font-medium mb-2">Live Monitoring</h3>
-              <div className="bg-blue-50 p-4 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-800 font-medium">AI Agent Status: {platform.status === 'connected' ? 'Active' : 'Inactive'}</p>
-                    <p className="text-sm text-blue-600 mt-1">
-                      {platform.status === 'connected' 
-                        ? 'Agent is currently monitoring the platform for new opportunities.' 
-                        : 'Agent is not currently monitoring this platform.'}
-                    </p>
+                
+                <div className="mt-4">
+                  <h3 className="text-lg font-medium mb-2">Live Monitoring</h3>
+                  <div className="bg-blue-50 p-4 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-800 font-medium">AI Agent Status: {platform.status === 'connected' ? 'Active' : 'Inactive'}</p>
+                        <p className="text-sm text-blue-600 mt-1">
+                          {platform.status === 'connected' 
+                            ? 'Agent is currently monitoring the platform for new opportunities.' 
+                            : 'Agent is not currently monitoring this platform.'}
+                        </p>
+                      </div>
+                      <Button variant="outline" className="border-blue-500 text-blue-700">
+                        {platform.status === 'connected' ? 'Watch Live' : 'Activate Agent'}
+                      </Button>
+                    </div>
                   </div>
-                  <Button variant="outline" className="border-blue-500 text-blue-700">
-                    {platform.status === 'connected' ? 'Watch Live' : 'Activate Agent'}
-                  </Button>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </CardContent>
         </TabsContent>
         
@@ -276,10 +284,31 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
         </TabsContent>
       </Tabs>
       
+      {showApiKeyForm && (
+        <div className="p-6 border-t">
+          <div className="mb-4 flex justify-between items-center">
+            <h3 className="text-lg font-medium">Update API Credentials</h3>
+            <Button variant="ghost" size="sm" onClick={() => setShowApiKeyForm(false)}>
+              Cancel
+            </Button>
+          </div>
+          {platform.name === 'Freelancer' ? (
+            <FreelancerApiKeyForm 
+              platform={platform} 
+              onSuccess={() => setShowApiKeyForm(false)} 
+            />
+          ) : (
+            <div className="p-4 bg-gray-50 rounded-md">
+              <p className="text-gray-500">API configuration not available for this platform type.</p>
+            </div>
+          )}
+        </div>
+      )}
+      
       <CardFooter className="border-t pt-4 flex justify-between">
         <Button variant="outline" onClick={onClose}>Close</Button>
-        {platform.status !== 'connected' && (
-          <Button onClick={() => alert('Reconnecting...')}>Reconnect</Button>
+        {!showApiKeyForm && platform.status !== 'connected' && (
+          <Button onClick={() => setShowApiKeyForm(true)}>Update API Credentials</Button>
         )}
       </CardFooter>
     </Card>

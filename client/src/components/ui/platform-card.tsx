@@ -48,6 +48,8 @@ const getPlatformIcon = (platformName: string) => {
       return <Briefcase {...iconProps} />;
     case "upwork":
       return <Building {...iconProps} />;
+    case "freelancer":
+      return <Briefcase {...iconProps} />;
     default:
       return <Building {...iconProps} />;
   }
