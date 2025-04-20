@@ -241,7 +241,7 @@ export function PlatformDetails({ platformId, onClose }: PlatformDetailsProps) {
                     <CardHeader className="pb-2">
                       <div className="flex justify-between">
                         <CardTitle>{workflow.name}</CardTitle>
-                        <Badge variant={workflow.status === 'active' ? 'success' : 'secondary'}>
+                        <Badge className={`${workflow.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                           {workflow.status}
                         </Badge>
                       </div>

@@ -110,6 +110,17 @@ export function PlatformCard({
   const isConnected = platform.status === "connected";
   const hasError = platform.healthStatus === "error";
   
+  // Safely extract workflow count from settings
+  const getWorkflowCount = (): string => {
+    if (!platform.settings) return '0';
+    if (typeof platform.settings !== 'object') return '0';
+    
+    const settings = platform.settings as Record<string, unknown>;
+    if (!settings.workflowCount) return '0';
+    
+    return String(settings.workflowCount);
+  };
+  
   return (
     <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-200" onClick={() => onView && onView(platform)}>
       <CardHeader className="p-4 border-b border-border">
@@ -195,9 +206,7 @@ export function PlatformCard({
           <div className="flex justify-between text-sm mb-1">
             <span>Workflows</span>
             <span>
-              {platform.settings && typeof platform.settings === 'object' && 'workflowCount' in platform.settings 
-                ? platform.settings.workflowCount 
-                : 0} active
+              {getWorkflowCount()} active
             </span>
           </div>
           <div className="flex justify-between text-sm">

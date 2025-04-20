@@ -392,7 +392,6 @@ export default function Connections() {
       <Dialog 
         open={!!selectedPlatform} 
         onOpenChange={(open) => !open && setSelectedPlatform(null)}
-        className="max-w-4xl"
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           {selectedPlatform && (
