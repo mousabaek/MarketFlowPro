@@ -10,6 +10,7 @@ import Workflows from "@/pages/workflows";
 import Connections from "@/pages/connections";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
+import Themes from "@/pages/themes";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/workflows" component={Workflows} />
       <Route path="/connections" component={Connections} />
       <Route path="/settings" component={Settings} />
+      <Route path="/themes" component={Themes} />
       <Route component={NotFound} />
     </Switch>
   );
