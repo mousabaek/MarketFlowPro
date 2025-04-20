@@ -125,13 +125,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Create an activity for the new workflow
-      // Get the steps array length safely
-      const steps = (workflow.steps as any[] || []);
-      
       await storage.createActivity({
         type: "system",
         title: `Workflow created`,
-        description: `Created new workflow "${workflow.name}" with ${steps.length} steps.`,
+        description: `Created new workflow "${workflow.name}"`,
         platformId: workflow.platformId,
         workflowId: workflow.id
       });
@@ -186,6 +183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const activities = await storage.getActivities(limit);
     res.json(activities);
   });
+
+  // Freelancer.com API Routes
+  app.post("/api/platforms/:platformId/freelancer/test-connection", FreelancerController.testConnection);
+  app.get("/api/platforms/:platformId/freelancer/profile", FreelancerController.getUserProfile);
+  app.get("/api/platforms/:platformId/freelancer/projects", FreelancerController.searchProjects);
+  app.get("/api/platforms/:platformId/freelancer/projects/:projectId", FreelancerController.getProjectDetails);
+  app.post("/api/platforms/:platformId/freelancer/bid", FreelancerController.submitBid);
+  app.get("/api/platforms/:platformId/freelancer/skills", FreelancerController.getSkills);
+  app.get("/api/platforms/:platformId/freelancer/bidding-stats", FreelancerController.getBiddingStats);
+  app.get("/api/platforms/:platformId/freelancer/current-bids", FreelancerController.getCurrentBids);
 
   // Create HTTP server
   const httpServer = createServer(app);
