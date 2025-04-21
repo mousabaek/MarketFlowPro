@@ -20,7 +20,7 @@ export class AIController {
       
       // Return proposal
       return res.status(200).json({ proposal });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating proposal:", error);
       
       if (error instanceof ZodError) {
@@ -51,7 +51,7 @@ export class AIController {
       
       // Return analysis
       return res.status(200).json(analysis);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing project:", error);
       
       if (error instanceof ZodError) {
@@ -82,7 +82,7 @@ export class AIController {
       
       // Return response
       return res.status(200).json({ response });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating client response:", error);
       
       if (error instanceof ZodError) {

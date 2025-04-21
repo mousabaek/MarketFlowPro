@@ -77,12 +77,12 @@ The proposal should include:
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
-        ],
+        ] as Array<{role: "system" | "user" | "assistant"; content: string}>,
         temperature: 0.7,
       });
 
       return response.choices[0].message.content || "Unable to generate proposal";
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating project proposal:", error);
       throw new Error(`Failed to generate project proposal: ${error.message}`);
     }
@@ -138,7 +138,7 @@ and provide a suitability score from 0-10, where 10 is perfect match.`;
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
-        ],
+        ] as Array<{role: "system" | "user" | "assistant"; content: string}>,
         response_format: { type: "json_object" },
         temperature: 0.3,
       });
@@ -159,7 +159,7 @@ and provide a suitability score from 0-10, where 10 is perfect match.`;
           reasoning: "Error analyzing project suitability"
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error analyzing project suitability:", error);
       throw new Error(`Failed to analyze project: ${error.message}`);
     }
@@ -212,7 +212,7 @@ Consider the project context when formulating your response.`;
       });
 
       return response.choices[0].message.content || "Unable to generate response";
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating client response:", error);
       throw new Error(`Failed to generate client response: ${error.message}`);
     }
