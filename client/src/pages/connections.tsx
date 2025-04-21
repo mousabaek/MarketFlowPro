@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Platform, platformConnectionSchema } from "@shared/schema";
+import { z } from "zod";
+import { UseFormReturn, Controller } from "react-hook-form";
 import { PlatformCard } from "@/components/ui/platform-card";
 import { PlatformDetails } from "@/components/ui/platform-details";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,62 @@ import {
 } from "@/components/ui/alert-dialog";
 
 
+// Define a custom form type for our platform connection form
+type PlatformFormValues = {
+  name: string;
+  type: string;
+  apiKey: string;
+  apiSecret: string;
+  settings: {
+    associateTag?: string;
+    marketplace?: string;
+    accessToken?: string;
+    userId?: string;
+    [key: string]: any;
+  };
+}
+
+// Custom FormField component for nested settings
+interface NestedFormFieldProps {
+  control: any;
+  name: string;
+  label: string;
+  placeholder: string;
+  description?: string;
+  type?: string;
+}
+
+const NestedFormField = ({ 
+  control, 
+  name, 
+  label, 
+  placeholder, 
+  description, 
+  type = "text" 
+}: NestedFormFieldProps) => {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState: { error } }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Input 
+              type={type} 
+              placeholder={placeholder} 
+              {...field} 
+              value={field.value || ""}
+            />
+          </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          {error && <FormMessage>{error.message}</FormMessage>}
+        </FormItem>
+      )}
+    />
+  );
+};
+
 export default function Connections() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -61,13 +119,19 @@ export default function Connections() {
   });
   
   // Form for adding a new platform connection
-  const form = useForm({
+  const form = useForm<PlatformFormValues>({
     resolver: zodResolver(platformConnectionSchema),
     defaultValues: {
       name: "",
       type: "",
       apiKey: "",
-      apiSecret: ""
+      apiSecret: "",
+      settings: {
+        associateTag: "",
+        marketplace: "US",
+        accessToken: "",
+        userId: ""
+      }
     },
   });
   
@@ -118,7 +182,7 @@ export default function Connections() {
   });
   
   // Handle form submission
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: PlatformFormValues) => {
     createPlatform.mutate(data);
   };
 
@@ -516,12 +580,23 @@ export default function Connections() {
     const iconProps = { className: "h-12 w-12 text-primary" };
     
     switch(platformName.toLowerCase()) {
+      // Affiliate platforms
       case "clickbank":
         return <ShoppingCart {...iconProps} />;
+      case "amazon associates":
+        return <Store {...iconProps} />;
+      case "etsy":
+        return <ShoppingBag {...iconProps} />;
+        
+      // Freelance platforms  
       case "fiverr":
         return <Briefcase {...iconProps} />;
       case "upwork":
         return <Building {...iconProps} />;
+      case "freelancer.com":
+        return <WrenchIcon {...iconProps} />;
+        
+      // Default icon
       default:
         return <Link2 {...iconProps} />;
     }
