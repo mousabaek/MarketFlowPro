@@ -370,16 +370,55 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
                           ))}
                         </div>
                       </CardContent>
-                      <CardFooter>
+                      <CardFooter className="flex gap-2 justify-between">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="ml-auto"
+                          className="flex-grow"
                           onClick={() => setSelectedProjectId(project.id)}
                         >
                           <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                           View Details
                         </Button>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={copiedProjectId === project.id ? "text-green-500" : ""}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyProjectLink(project.id);
+                                }}>
+                                {copiedProjectId === project.id ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <p>{copiedProjectId === project.id ? "Copied!" : "Copy Link"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`https://www.freelancer.com/projects/${project.id}`, '_blank');
+                                }}>
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <p>Open in Freelancer.com</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </CardFooter>
                     </Card>
                   ))}
@@ -440,15 +479,54 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
                           {bid.description}
                         </p>
                       </CardContent>
-                      <CardFooter>
+                      <CardFooter className="flex gap-2 justify-between">
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="ml-auto"
+                          className="flex-grow"
                         >
                           <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                           View Details
                         </Button>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className={copiedProjectId === bid.project_id ? "text-green-500" : ""}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyProjectLink(bid.project_id);
+                                }}>
+                                {copiedProjectId === bid.project_id ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <p>{copiedProjectId === bid.project_id ? "Copied!" : "Copy Link"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`https://www.freelancer.com/projects/${bid.project_id}`, '_blank');
+                                }}>
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <p>Open in Freelancer.com</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </CardFooter>
                     </Card>
                   ))}
