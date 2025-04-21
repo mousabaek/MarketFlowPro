@@ -401,7 +401,7 @@ export function OpportunityMatcher() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="beginner">Beginner (< 1 year)</SelectItem>
+                            <SelectItem value="beginner">Beginner (&lt; 1 year)</SelectItem>
                             <SelectItem value="intermediate">Intermediate (1-3 years)</SelectItem>
                             <SelectItem value="advanced">Advanced (3-5 years)</SelectItem>
                             <SelectItem value="expert">Expert (5+ years)</SelectItem>
