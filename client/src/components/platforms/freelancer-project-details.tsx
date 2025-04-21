@@ -10,7 +10,8 @@ import { ProposalGenerator, ProjectAnalyzer } from "@/components/ai";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { AlertCircle, ArrowLeft, Calendar, Clock, DollarSign, Globe, Tag, User } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertCircle, ArrowLeft, Calendar, Clock, Copy, DollarSign, ExternalLink, Globe, Share2, Tag, User } from "lucide-react";
 import { Platform } from "@shared/schema";
 
 interface FreelancerProjectDetailsProps {
@@ -28,6 +29,7 @@ export function FreelancerProjectDetails({
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("details");
   const [matchScore, setMatchScore] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Get project details
   const { data: project, error, isLoading } = useQuery({
@@ -73,6 +75,34 @@ export function FreelancerProjectDetails({
   // Function to handle analysis completion
   const handleAnalysisComplete = (score: number) => {
     setMatchScore(score);
+  };
+  
+  // Function to copy project link to clipboard
+  const copyProjectLink = () => {
+    if (!project) return;
+    
+    // Create the project URL (this would be the actual Freelancer.com URL in production)
+    const projectUrl = `https://www.freelancer.com/projects/${project.id}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(projectUrl).then(() => {
+      setCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Project link has been copied to clipboard",
+      });
+      
+      // Reset copy state after 2 seconds
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    }).catch(err => {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link to clipboard",
+        variant: "destructive",
+      });
+    });
   };
   
   // Render loading state
@@ -132,15 +162,57 @@ export function FreelancerProjectDetails({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <CardTitle className="text-xl">{project.title}</CardTitle>
-              <CardDescription>
-                Project ID: {project.id} • Posted {formatDate(project.timeSubmitted)}
-              </CardDescription>
+          <div className="flex justify-between items-start">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" onClick={onBack}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <CardTitle className="text-xl">{project.title}</CardTitle>
+                <CardDescription>
+                  Project ID: {project.id} • Posted {formatDate(project.timeSubmitted)}
+                </CardDescription>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={copyProjectLink} 
+                      className="transition-all duration-200"
+                    >
+                      {copied ? 
+                        <Copy className="h-4 w-4 text-green-500" /> : 
+                        <Copy className="h-4 w-4" />
+                      }
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy project link</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => window.open(`https://www.freelancer.com/projects/${project.id}`, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open in Freelancer.com</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>
