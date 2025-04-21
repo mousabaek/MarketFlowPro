@@ -9,7 +9,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDate } from '@/lib/utils';
-import { Loader2, RefreshCw, AlertTriangle, CheckCircle, Sparkles } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, CheckCircle, Sparkles, Copy, ExternalLink } from 'lucide-react';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 import { FreelancerProjectDetails } from './freelancer-project-details';
 
 interface FreelancerPlatformProps {
@@ -18,8 +20,10 @@ interface FreelancerPlatformProps {
 
 export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [copiedProjectId, setCopiedProjectId] = useState<number | null>(null);
   
   // Test connection mutation
   const testConnection = useMutation({
@@ -67,6 +71,32 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
     queryFn: ({ queryKey }) => apiRequest(queryKey[0]),
     enabled: platform.status === 'connected' && activeTab === 'bids',
   });
+  
+  // Function to handle copying project link to clipboard
+  const copyProjectLink = (projectId: number) => {
+    // Create the project URL (this would be the actual Freelancer.com URL in production)
+    const projectUrl = `https://www.freelancer.com/projects/${projectId}`;
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(projectUrl).then(() => {
+      setCopiedProjectId(projectId);
+      toast({
+        title: "Link copied!",
+        description: "Project link has been copied to clipboard",
+      });
+      
+      // Reset copy state after 2 seconds
+      setTimeout(() => {
+        setCopiedProjectId(null);
+      }, 2000);
+    }).catch(err => {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy the link to clipboard",
+        variant: "destructive",
+      });
+    });
+  };
   
   // Connection status indicator
   const ConnectionStatus = () => {
