@@ -228,21 +228,12 @@ export default function Connections() {
                   </FormItem>
                 )}
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="settings.associateTag"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Associate Tag</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., mystore-20" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your Amazon Associates tracking ID
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Associate Tag"
+                placeholder="e.g., mystore-20"
+                description="Your Amazon Associates tracking ID"
               />
               <FormField
                 control={form.control}
@@ -318,21 +309,13 @@ export default function Connections() {
                   </FormItem>
                 )}
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="settings.accessToken"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Access Token (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter your Etsy OAuth access token" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      If you already have an OAuth access token
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Access Token (Optional)"
+                placeholder="Enter your Etsy OAuth access token"
+                type="password"
+                description="If you already have an OAuth access token"
               />
             </>
           );
@@ -391,21 +374,12 @@ export default function Connections() {
                   </FormItem>
                 )}
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="settings.userId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>User ID (Optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your Freelancer.com user ID" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your numerical user ID from Freelancer.com
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="User ID (Optional)"
+                placeholder="Enter your Freelancer.com user ID"
+                description="Your numerical user ID from Freelancer.com"
               />
             </>
           );
