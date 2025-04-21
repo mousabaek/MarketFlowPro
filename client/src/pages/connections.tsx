@@ -74,6 +74,15 @@ interface NestedFormFieldProps {
   type?: string;
 }
 
+interface NestedSelectFieldProps {
+  control: any;
+  name: string;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  options: { value: string; label: string }[];
+}
+
 const NestedFormField = ({ 
   control, 
   name, 
@@ -97,6 +106,46 @@ const NestedFormField = ({
               value={field.value || ""}
             />
           </FormControl>
+          {description && <FormDescription>{description}</FormDescription>}
+          {error && <FormMessage>{error.message}</FormMessage>}
+        </FormItem>
+      )}
+    />
+  );
+};
+
+const NestedSelectField = ({ 
+  control, 
+  name, 
+  label, 
+  options, 
+  description, 
+  placeholder = "Select an option" 
+}: NestedSelectFieldProps) => {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState: { error } }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <Select
+            onValueChange={field.onChange}
+            defaultValue={field.value || options[0]?.value}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder={placeholder} />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {description && <FormDescription>{description}</FormDescription>}
           {error && <FormMessage>{error.message}</FormMessage>}
         </FormItem>
@@ -137,7 +186,7 @@ export default function Connections() {
   
   // Create platform connection mutation
   const createPlatform = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: PlatformFormValues) => {
       const res = await apiRequest("POST", "/api/platforms", data);
       return res.json();
     },
@@ -196,37 +245,20 @@ export default function Connections() {
         if (platformName === "Amazon Associates") {
           return (
             <>
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your Amazon Access Key" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your Amazon Access Key ID from the PA-API credentials
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Key"
+                placeholder="Enter your Amazon Access Key"
+                description="Your Amazon Access Key ID from the PA-API credentials"
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiSecret"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Secret</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter your Amazon Secret Key" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your Amazon Secret Access Key from the PA-API credentials
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Secret"
+                placeholder="Enter your Amazon Secret Key" 
+                type="password"
+                description="Your Amazon Secret Access Key from the PA-API credentials"
               />
               <NestedFormField
                 control={form.control}
@@ -235,79 +267,46 @@ export default function Connections() {
                 placeholder="e.g., mystore-20"
                 description="Your Amazon Associates tracking ID"
               />
-              <FormField
+              <NestedSelectField
                 control={form.control}
                 name="settings.marketplace"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Marketplace</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || "US"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select marketplace" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="US">United States</SelectItem>
-                        <SelectItem value="CA">Canada</SelectItem>
-                        <SelectItem value="UK">United Kingdom</SelectItem>
-                        <SelectItem value="DE">Germany</SelectItem>
-                        <SelectItem value="FR">France</SelectItem>
-                        <SelectItem value="JP">Japan</SelectItem>
-                        <SelectItem value="IT">Italy</SelectItem>
-                        <SelectItem value="ES">Spain</SelectItem>
-                        <SelectItem value="IN">India</SelectItem>
-                        <SelectItem value="BR">Brazil</SelectItem>
-                        <SelectItem value="MX">Mexico</SelectItem>
-                        <SelectItem value="AU">Australia</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Choose the Amazon marketplace you're affiliated with
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="Marketplace"
+                placeholder="Select marketplace"
+                description="Choose the Amazon marketplace you're affiliated with"
+                options={[
+                  { value: "US", label: "United States" },
+                  { value: "CA", label: "Canada" },
+                  { value: "UK", label: "United Kingdom" },
+                  { value: "DE", label: "Germany" },
+                  { value: "FR", label: "France" },
+                  { value: "JP", label: "Japan" },
+                  { value: "IT", label: "Italy" },
+                  { value: "ES", label: "Spain" },
+                  { value: "IN", label: "India" },
+                  { value: "BR", label: "Brazil" },
+                  { value: "MX", label: "Mexico" },
+                  { value: "AU", label: "Australia" }
+                ]}
               />
             </>
           );
         } else if (platformName === "Etsy") {
           return (
             <>
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your Etsy API key" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Your Etsy API key from the developer portal
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Key"
+                placeholder="Enter your Etsy API key"
+                description="Your Etsy API key from the developer portal"
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiSecret"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Secret (Optional)</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter your Etsy API secret" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Only required if using OAuth authentication
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Secret (Optional)"
+                placeholder="Enter your Etsy API secret"
+                type="password"
+                description="Only required if using OAuth authentication"
               />
               <NestedFormField
                 control={form.control}
@@ -323,31 +322,18 @@ export default function Connections() {
           // Default affiliate platform fields (e.g., Clickbank)
           return (
             <>
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your API key" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Key"
+                placeholder="Enter your API key"
               />
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiSecret"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Secret</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Enter your API secret" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Secret"
+                placeholder="Enter your API secret"
+                type="password"
               />
             </>
           );
@@ -358,21 +344,12 @@ export default function Connections() {
         if (platformName === "Freelancer.com") {
           return (
             <>
-              <FormField
+              <NestedFormField
                 control={form.control}
                 name="apiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>API Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your Freelancer.com API key" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      You can find your API key in your Freelancer.com developer settings.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                label="API Key"
+                placeholder="Enter your Freelancer.com API key"
+                description="You can find your API key in your Freelancer.com developer settings."
               />
               <NestedFormField
                 control={form.control}

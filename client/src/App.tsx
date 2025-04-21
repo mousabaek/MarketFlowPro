@@ -8,6 +8,7 @@ import AppLayout from "@/layouts/app-layout";
 import Dashboard from "@/pages/dashboard";
 import Workflows from "@/pages/workflows";
 import Connections from "@/pages/connections";
+import PlatformDetails from "@/pages/platform-details";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import Themes from "@/pages/themes";
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/workflows" component={Workflows} />
       <Route path="/connections" component={Connections} />
+      <Route path="/platforms/:id" component={PlatformDetails} />
       <Route path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
       <Route component={NotFound} />

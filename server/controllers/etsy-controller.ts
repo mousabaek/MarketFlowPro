@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { EtsyApiService, EtsySearchParamsSchema, ListingLookupSchema } from '../services/etsy-api';
-import { storage } from '../storage';
 
 /**
  * Controller for Etsy API endpoints
@@ -10,9 +9,7 @@ export class EtsyController {
    * Helper method to extract access token from platform settings
    */
   private static getAccessToken(platform: any): string | null {
-    return platform.settings && typeof platform.settings === 'object' 
-      ? (platform.settings as any).accessToken || null
-      : null;
+    return platform?.settings?.accessToken || null;
   }
   
   /**
@@ -20,58 +17,35 @@ export class EtsyController {
    */
   static async testConnection(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
+      const { apiKey, apiSecret, settings } = req.body;
       
-      if (!platformId) {
-        return res.status(400).json({ error: 'Platform ID is required' });
+      if (!apiKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Missing required API key'
+        });
       }
       
-      const platform = await storage.getPlatform(parseInt(platformId));
-      
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.type !== 'affiliate' || platform.name !== 'Etsy') {
-        return res.status(400).json({ error: 'Invalid platform type or name' });
-      }
-      
-      if (!platform.apiKey) {
-        return res.status(400).json({ error: 'API key is required' });
-      }
+      const accessToken = settings?.accessToken || null;
       
       const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
+        apiKey, 
+        apiSecret || null,
+        accessToken
       );
       
       const isConnected = await etsyApi.testConnection();
       
-      if (isConnected) {
-        // Update platform status
-        await storage.updatePlatform(platform.id, { 
-          status: 'connected',
-          healthStatus: 'healthy',
-          lastSynced: new Date()
-        });
-        
-        return res.json({ success: true, message: 'Connection successful' });
-      } else {
-        // Update platform status
-        await storage.updatePlatform(platform.id, { 
-          status: 'error',
-          healthStatus: 'error'
-        });
-        
-        return res.status(400).json({ 
-          error: 'Failed to connect to Etsy API. Please check your credentials.' 
-        });
-      }
+      return res.json({ 
+        success: isConnected,
+        message: isConnected ? 'Successfully connected to Etsy API' : 'Failed to connect to Etsy API'
+      });
     } catch (error) {
       console.error('Error testing Etsy connection:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while testing the connection' 
+        success: false, 
+        message: 'An error occurred while testing the connection',
+        error: error.message
       });
     }
   }
@@ -81,41 +55,46 @@ export class EtsyController {
    */
   static async searchListings(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
-      
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
+      const { apiKey, apiSecret, accessToken } = req.body;
       
       // Validate search parameters
-      const searchParams = EtsySearchParamsSchema.parse(req.query);
-      
-      // Initialize API client
-      const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
-      );
-      
-      // Execute search
-      const results = await etsyApi.searchListings(searchParams);
-      
-      return res.json(results);
-    } catch (error) {
-      console.error('Error searching Etsy listings:', error);
-      
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: 'Invalid search parameters' });
+      const validationResult = EtsySearchParamsSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid search parameters',
+          errors: validationResult.error.errors
+        });
       }
       
+      const etsyApi = new EtsyApiService(
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
+      );
+      
+      const { keywords, category, minPrice, maxPrice, limit, offset, sortBy } = req.body;
+      
+      const results = await etsyApi.searchListings({
+        keywords,
+        category,
+        minPrice,
+        maxPrice,
+        limit,
+        offset,
+        sortBy
+      });
+      
+      return res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      console.error('Error searching Etsy listings:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while searching listings' 
+        success: false, 
+        message: 'An error occurred while searching for listings',
+        error: error.message
       });
     }
   }
@@ -125,41 +104,36 @@ export class EtsyController {
    */
   static async getListingDetails(req: Request, res: Response) {
     try {
-      const { platformId, listingId } = req.params;
-      
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
+      const { apiKey, apiSecret, accessToken, listingId } = req.body;
       
       // Validate listing ID
-      ListingLookupSchema.parse({ listingId: parseInt(listingId) });
-      
-      // Initialize API client
-      const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
-      );
-      
-      // Get listing details
-      const listing = await etsyApi.getListingDetails(parseInt(listingId));
-      
-      return res.json(listing);
-    } catch (error) {
-      console.error('Error getting Etsy listing details:', error);
-      
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: 'Invalid listing ID' });
+      const validationResult = ListingLookupSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid listing ID',
+          errors: validationResult.error.errors
+        });
       }
       
+      const etsyApi = new EtsyApiService(
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
+      );
+      
+      const listing = await etsyApi.getListingDetails(listingId);
+      
+      return res.json({
+        success: true,
+        data: listing
+      });
+    } catch (error) {
+      console.error('Error getting Etsy listing details:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting listing details' 
+        success: false, 
+        message: 'An error occurred while retrieving listing details',
+        error: error.message
       });
     }
   }
@@ -169,33 +143,33 @@ export class EtsyController {
    */
   static async getShopDetails(req: Request, res: Response) {
     try {
-      const { platformId, shopId } = req.params;
+      const { apiKey, apiSecret, accessToken, shopId } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
+      if (!shopId || typeof shopId !== 'number') {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid shop ID. Please provide a valid shop ID.'
+        });
       }
       
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Initialize API client
       const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
       );
       
-      // Get shop details
-      const shop = await etsyApi.getShopDetails(parseInt(shopId));
+      const shop = await etsyApi.getShopDetails(shopId);
       
-      return res.json(shop);
+      return res.json({
+        success: true,
+        data: shop
+      });
     } catch (error) {
       console.error('Error getting Etsy shop details:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting shop details' 
+        success: false, 
+        message: 'An error occurred while retrieving shop details',
+        error: error.message
       });
     }
   }
@@ -205,34 +179,26 @@ export class EtsyController {
    */
   static async getTrendingListings(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
-      const { limit } = req.query;
+      const { apiKey, apiSecret, accessToken, limit } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Initialize API client
       const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
       );
       
-      // Get trending listings
-      const listings = await etsyApi.getTrendingListings(parseInt(limit as string) || 10);
+      const listings = await etsyApi.getTrendingListings(limit);
       
-      return res.json(listings);
+      return res.json({
+        success: true,
+        data: listings
+      });
     } catch (error) {
       console.error('Error getting Etsy trending listings:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting trending listings' 
+        success: false, 
+        message: 'An error occurred while retrieving trending listings',
+        error: error.message
       });
     }
   }
@@ -242,33 +208,26 @@ export class EtsyController {
    */
   static async getCategories(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
+      const { apiKey, apiSecret, accessToken } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Initialize API client
       const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
       );
       
-      // Get categories
       const categories = await etsyApi.getCategories();
       
-      return res.json(categories);
+      return res.json({
+        success: true,
+        data: categories
+      });
     } catch (error) {
       console.error('Error getting Etsy categories:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting categories' 
+        success: false, 
+        message: 'An error occurred while retrieving categories',
+        error: error.message
       });
     }
   }
@@ -278,34 +237,26 @@ export class EtsyController {
    */
   static async getAffiliateStats(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
-      const { period } = req.query;
+      const { apiKey, apiSecret, accessToken, period } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Initialize API client
       const etsyApi = new EtsyApiService(
-        platform.apiKey, 
-        platform.apiSecret || null,
-        EtsyController.getAccessToken(platform)
+        apiKey, 
+        apiSecret || null,
+        accessToken || null
       );
       
-      // Get affiliate stats
-      const stats = await etsyApi.getAffiliateStats(period as string);
+      const stats = await etsyApi.getAffiliateStats(period);
       
-      return res.json(stats);
+      return res.json({
+        success: true,
+        data: stats
+      });
     } catch (error) {
       console.error('Error getting Etsy affiliate stats:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting affiliate stats' 
+        success: false, 
+        message: 'An error occurred while retrieving affiliate statistics',
+        error: error.message
       });
     }
   }

@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { z } from 'zod';
 import crypto from 'crypto';
+import { z } from 'zod';
 
 /**
  * Amazon Associates API Service
@@ -25,44 +25,72 @@ export class AmazonAssociatesApiService {
    * Generate signature for Amazon API request
    */
   private generateSignature(stringToSign: string, secretKey: string): string {
-    return crypto
-      .createHmac('sha256', secretKey)
-      .update(stringToSign)
-      .digest('base64');
+    return crypto.createHmac('sha256', secretKey).update(stringToSign).digest('base64');
   }
 
   /**
    * Get authentication headers for API requests
    */
   private getHeaders(payload: any) {
-    const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const date = timestamp.substring(0, 8);
-
-    // Create canonical request
-    const canonicalURI = '/paapi5/searchitems';
-    const canonicalQueryString = '';
-    const canonicalHeaders = `host:webservices.amazon.${this.marketplace.toLowerCase()}\nx-amz-date:${timestamp}\n`;
-    const signedHeaders = 'host;x-amz-date';
-    const payloadHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
-    const canonicalRequest = `POST\n${canonicalURI}\n${canonicalQueryString}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
-
-    // Create string to sign
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const credentialScope = `${date}/${this.marketplace.toLowerCase()}/paapi5/aws4_request`;
-    const stringToSign = `${algorithm}\n${timestamp}\n${credentialScope}\n${crypto.createHash('sha256').update(canonicalRequest).digest('hex')}`;
-
-    // Calculate signature
-    const kDate = crypto.createHmac('sha256', `AWS4${this.secretKey}`).update(date).digest();
-    const kRegion = crypto.createHmac('sha256', kDate).update(this.marketplace.toLowerCase()).digest();
-    const kService = crypto.createHmac('sha256', kRegion).update('paapi5').digest();
-    const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
-    const signature = this.generateSignature(stringToSign, kSigning.toString('hex'));
+    const timestamp = new Date().toISOString();
+    const service = 'ProductAdvertisingAPI';
+    const region = this.getRegionFromMarketplace();
+    
+    // Format the request for signing
+    const stringToSign = `${service}\n${region}\n${timestamp}\n${JSON.stringify(payload)}`;
+    const signature = this.generateSignature(stringToSign, this.secretKey);
 
     return {
       'Content-Type': 'application/json',
       'X-Amz-Date': timestamp,
-      'Authorization': `${algorithm} Credential=${this.accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
+      'X-Amz-Target': 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.SearchItems',
+      'Host': `webservices.amazon.${this.getMarketplaceTLD()}`,
+      'Authorization': `AWS4-HMAC-SHA256 Credential=${this.accessKey}/${timestamp.slice(0, 8)}/${region}/${service}/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature=${signature}`
     };
+  }
+
+  /**
+   * Get region from marketplace code
+   */
+  private getRegionFromMarketplace(): string {
+    const marketplaceRegions: Record<string, string> = {
+      'US': 'us-east-1',
+      'CA': 'us-east-1',
+      'MX': 'us-east-1',
+      'BR': 'us-east-1',
+      'UK': 'eu-west-1',
+      'DE': 'eu-west-1',
+      'FR': 'eu-west-1',
+      'IT': 'eu-west-1',
+      'ES': 'eu-west-1',
+      'IN': 'eu-west-1',
+      'JP': 'us-west-2',
+      'AU': 'us-west-2'
+    };
+    
+    return marketplaceRegions[this.marketplace] || 'us-east-1';
+  }
+
+  /**
+   * Get TLD for marketplace
+   */
+  private getMarketplaceTLD(): string {
+    const marketplaceTLDs: Record<string, string> = {
+      'US': 'com',
+      'CA': 'ca',
+      'MX': 'com.mx',
+      'BR': 'com.br',
+      'UK': 'co.uk',
+      'DE': 'de',
+      'FR': 'fr',
+      'IT': 'it',
+      'ES': 'es',
+      'IN': 'in',
+      'JP': 'co.jp',
+      'AU': 'com.au'
+    };
+    
+    return marketplaceTLDs[this.marketplace] || 'com';
   }
 
   /**
@@ -70,22 +98,15 @@ export class AmazonAssociatesApiService {
    */
   public async testConnection(): Promise<boolean> {
     try {
-      const payload = {
-        'Keywords': 'test',
-        'Resources': ['ItemInfo.Title'],
-        'PartnerTag': this.associateTag,
-        'PartnerType': 'Associates',
-        'Marketplace': `www.amazon.${this.marketplace.toLowerCase()}`
-      };
-
-      await axios.post(
-        this.baseUrl,
-        payload,
-        { headers: this.getHeaders(payload) }
-      );
-      return true;
+      // Simple search to test connection
+      const result = await this.searchProducts({ 
+        keywords: "test",
+        limit: 1
+      });
+      
+      return result && result.items && result.items.length > 0;
     } catch (error) {
-      console.error('Error testing Amazon Associates API connection:', error);
+      console.error('Amazon Associates API connection test failed:', error);
       return false;
     }
   }
@@ -98,51 +119,59 @@ export class AmazonAssociatesApiService {
     category?: string;
     minPrice?: number;
     maxPrice?: number;
-    sortBy?: string;
     limit?: number;
+    sortBy?: 'relevance' | 'price-asc' | 'price-desc' | 'date-desc';
   }) {
+    const { keywords, category, minPrice, maxPrice, limit = 10, sortBy = 'relevance' } = options;
+    
+    // Build query parameters
+    const payload = {
+      Keywords: keywords,
+      SearchIndex: category || 'All',
+      ItemCount: limit,
+      PartnerTag: this.associateTag,
+      PartnerType: 'Associates',
+      Marketplace: `www.amazon.${this.getMarketplaceTLD()}`,
+      Resources: [
+        'ItemInfo.Title',
+        'ItemInfo.ByLineInfo',
+        'ItemInfo.ContentInfo',
+        'Offers.Listings.Price',
+        'Offers.Listings.DeliveryInfo.IsPrimeEligible',
+        'Images.Primary.Medium'
+      ]
+    };
+
+    if (minPrice || maxPrice) {
+      payload.MinPrice = minPrice;
+      payload.MaxPrice = maxPrice;
+    }
+
+    switch (sortBy) {
+      case 'price-asc':
+        payload.SortBy = 'Price:LowToHigh';
+        break;
+      case 'price-desc':
+        payload.SortBy = 'Price:HighToLow';
+        break;
+      case 'date-desc':
+        payload.SortBy = 'NewestArrivals';
+        break;
+      default:
+        payload.SortBy = 'Relevance';
+    }
+
     try {
-      const payload = {
-        'Keywords': options.keywords,
-        'Resources': [
-          'ItemInfo.Title',
-          'ItemInfo.Features',
-          'ItemInfo.ProductInfo',
-          'ItemInfo.ByLineInfo',
-          'Images.Primary.Medium',
-          'Offers.Listings.Price',
-          'Offers.Listings.SavingBasis'
-        ],
-        'PartnerTag': this.associateTag,
-        'PartnerType': 'Associates',
-        'Marketplace': `www.amazon.${this.marketplace.toLowerCase()}`,
-        'ItemCount': options.limit || 10
-      };
-
-      if (options.category) {
-        payload['SearchIndex'] = options.category;
-      }
-
-      if (options.minPrice || options.maxPrice) {
-        payload['ItemPage'] = {
-          'MinPrice': options.minPrice,
-          'MaxPrice': options.maxPrice,
-        };
-      }
-
-      if (options.sortBy) {
-        payload['SortBy'] = options.sortBy;
-      }
-
-      const response = await axios.post(
-        this.baseUrl,
-        payload,
-        { headers: this.getHeaders(payload) }
-      );
+      const response = await axios({
+        method: 'post',
+        url: this.baseUrl,
+        headers: this.getHeaders(payload),
+        data: payload
+      });
 
       return response.data;
     } catch (error) {
-      console.error('Error searching products:', error);
+      console.error('Amazon Associates API search failed:', error);
       throw error;
     }
   }
@@ -151,38 +180,36 @@ export class AmazonAssociatesApiService {
    * Get product details by ASIN
    */
   public async getProductDetails(asin: string) {
-    try {
-      const payload = {
-        'ItemIds': [asin],
-        'Resources': [
-          'ItemInfo.Title',
-          'ItemInfo.Features',
-          'ItemInfo.ProductInfo',
-          'ItemInfo.ByLineInfo',
-          'ItemInfo.ContentInfo',
-          'ItemInfo.ManufactureInfo',
-          'ItemInfo.TechnicalInfo',
-          'ItemInfo.Classifications',
-          'Images.Primary.Large',
-          'Images.Variants.Large',
-          'Offers.Listings.Price',
-          'Offers.Listings.SavingBasis',
-          'Offers.Summaries.LowestPrice'
-        ],
-        'PartnerTag': this.associateTag,
-        'PartnerType': 'Associates',
-        'Marketplace': `www.amazon.${this.marketplace.toLowerCase()}`
-      };
+    const payload = {
+      ItemIds: [asin],
+      PartnerTag: this.associateTag,
+      PartnerType: 'Associates',
+      Marketplace: `www.amazon.${this.getMarketplaceTLD()}`,
+      Resources: [
+        'ItemInfo.Title',
+        'ItemInfo.Features',
+        'ItemInfo.ProductInfo',
+        'ItemInfo.ByLineInfo',
+        'ItemInfo.ContentInfo',
+        'ItemInfo.TechnicalInfo',
+        'Offers.Listings.Price',
+        'Offers.Listings.DeliveryInfo.IsPrimeEligible',
+        'Images.Primary.Large',
+        'Images.Variants.Large'
+      ]
+    };
 
-      const response = await axios.post(
-        this.baseUrl,
-        payload,
-        { headers: this.getHeaders(payload) }
-      );
+    try {
+      const response = await axios({
+        method: 'post',
+        url: 'https://webservices.amazon.com/paapi5/getitems',
+        headers: this.getHeaders(payload),
+        data: payload
+      });
 
       return response.data;
     } catch (error) {
-      console.error(`Error getting product details for ASIN ${asin}:`, error);
+      console.error('Amazon Associates API product details failed:', error);
       throw error;
     }
   }
@@ -191,33 +218,24 @@ export class AmazonAssociatesApiService {
    * Get commission rates (note: this is generally retrieved from dashboard, not API)
    */
   public async getCommissionRates() {
-    // This is a mock implementation as Amazon doesn't provide direct API access to commission rates
-    // In a real implementation, these would typically be manually configured based on current rates
+    // This is simulated as the actual commission rates are retrieved from the Associates dashboard
     return {
-      success: true,
-      result: {
-        rates: {
-          'Amazon Devices': 4,
-          'Automotive': 4.5,
-          'Baby': 4.5,
-          'Beauty': 6,
-          'Books': 4.5,
-          'Clothing': 7,
-          'Electronics': 3,
-          'Furniture': 8,
-          'Garden': 5.5,
-          'Grocery': 5,
-          'Health & Personal Care': 6,
-          'Home': 8,
-          'Kitchen': 8,
-          'Office Products': 6,
-          'Pet Supplies': 8,
-          'Sports': 5.5,
-          'Tools': 6,
-          'Toys': 3,
-          'Video Games': 2
-        }
-      }
+      // Example rates by category - these are simulated and would need to be manually updated
+      rates: [
+        { category: 'Apparel', rate: 4.0 },
+        { category: 'Automotive', rate: 4.5 },
+        { category: 'Baby Products', rate: 4.5 },
+        { category: 'Beauty', rate: 6.0 },
+        { category: 'Books', rate: 4.5 },
+        { category: 'Electronics', rate: 4.0 },
+        { category: 'Furniture', rate: 8.0 },
+        { category: 'Home & Kitchen', rate: 8.0 },
+        { category: 'Pet Products', rate: 8.0 },
+        { category: 'Sports & Outdoors', rate: 4.5 },
+        { category: 'Toys & Games', rate: 3.0 },
+        { category: 'Video Games', rate: 2.0 }
+      ],
+      lastUpdated: new Date().toISOString()
     };
   }
 
@@ -225,33 +243,37 @@ export class AmazonAssociatesApiService {
    * Get earnings report
    */
   public async getEarningsReport(period: string = 'last30days') {
-    // This is a mock implementation as Amazon doesn't provide direct API access to earnings
-    // In a real implementation, this would be integrated with the Amazon Associates reporting API
+    // This is simulated as earnings data typically comes from the Associates dashboard
     return {
-      success: true,
-      result: {
-        period: period,
-        clicks: 1250,
-        orderedItems: 78,
-        earnings: 342.55,
-        conversionRate: 6.24,
-        averageCommission: 4.39
-      }
+      period,
+      summary: {
+        earnings: Math.random() * 1000,
+        clicks: Math.floor(Math.random() * 5000),
+        impressions: Math.floor(Math.random() * 50000),
+        orders: Math.floor(Math.random() * 100),
+        conversion: Math.random() * 5
+      },
+      // This would be data to populate a chart
+      dailyStats: Array.from({ length: 30 }, (_, i) => ({
+        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        earnings: Math.random() * 100,
+        clicks: Math.floor(Math.random() * 200),
+        orders: Math.floor(Math.random() * 5)
+      }))
     };
   }
 }
 
-// Zod schema for product search parameters
+// Zod schemas for validation
 export const ProductSearchParamsSchema = z.object({
-  keywords: z.string().min(1, "Keywords are required"),
+  keywords: z.string().min(1, 'Keywords are required'),
   category: z.string().optional(),
-  minPrice: z.number().min(0).optional(),
-  maxPrice: z.number().min(0).optional(),
-  sortBy: z.string().optional(),
-  limit: z.number().min(1).max(50).optional().default(10),
+  minPrice: z.number().optional(),
+  maxPrice: z.number().optional(),
+  limit: z.number().optional(),
+  sortBy: z.enum(['relevance', 'price-asc', 'price-desc', 'date-desc']).optional()
 });
 
-// Zod schema for ASIN lookup
 export const AsinLookupSchema = z.object({
-  asin: z.string().min(10).max(10),
+  asin: z.string().min(10, 'ASIN must be at least 10 characters')
 });

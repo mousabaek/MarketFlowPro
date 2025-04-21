@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { AmazonAssociatesApiService, ProductSearchParamsSchema, AsinLookupSchema } from '../services/amazon-associates-api';
-import { storage } from '../storage';
 
 /**
  * Controller for Amazon Associates API endpoints
@@ -11,65 +10,34 @@ export class AmazonAssociatesController {
    */
   static async testConnection(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
+      const { apiKey, apiSecret, settings } = req.body;
       
-      if (!platformId) {
-        return res.status(400).json({ error: 'Platform ID is required' });
-      }
-      
-      const platform = await storage.getPlatform(parseInt(platformId));
-      
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.type !== 'affiliate' || platform.name !== 'Amazon Associates') {
-        return res.status(400).json({ error: 'Invalid platform type or name' });
-      }
-      
-      if (!platform.apiKey || !platform.apiSecret) {
-        return res.status(400).json({ error: 'API key and secret are required' });
-      }
-      
-      // Extract settings
-      const settings = platform.settings as any;
-      if (!settings?.associateTag) {
-        return res.status(400).json({ error: 'Associate Tag is required in platform settings' });
+      if (!apiKey || !apiSecret || !settings?.associateTag || !settings?.marketplace) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Missing required credentials. Please provide API key, API secret, associate tag, and marketplace.'
+        });
       }
       
       const amazonApi = new AmazonAssociatesApiService(
-        platform.apiKey, 
-        platform.apiSecret, 
+        apiKey, 
+        apiSecret, 
         settings.associateTag,
-        settings.marketplace || 'US'
+        settings.marketplace
       );
       
       const isConnected = await amazonApi.testConnection();
       
-      if (isConnected) {
-        // Update platform status
-        await storage.updatePlatform(platform.id, { 
-          status: 'connected',
-          healthStatus: 'healthy',
-          lastSynced: new Date()
-        });
-        
-        return res.json({ success: true, message: 'Connection successful' });
-      } else {
-        // Update platform status
-        await storage.updatePlatform(platform.id, { 
-          status: 'error',
-          healthStatus: 'error'
-        });
-        
-        return res.status(400).json({ 
-          error: 'Failed to connect to Amazon Associates API. Please check your credentials.' 
-        });
-      }
+      return res.json({ 
+        success: isConnected,
+        message: isConnected ? 'Successfully connected to Amazon Associates API' : 'Failed to connect to Amazon Associates API'
+      });
     } catch (error) {
       console.error('Error testing Amazon Associates connection:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while testing the connection' 
+        success: false, 
+        message: 'An error occurred while testing the connection',
+        error: error.message
       });
     }
   }
@@ -79,45 +47,46 @@ export class AmazonAssociatesController {
    */
   static async searchProducts(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
-      
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
+      const { apiKey, apiSecret, associateTag, marketplace } = req.body;
       
       // Validate search parameters
-      const searchParams = ProductSearchParamsSchema.parse(req.query);
-      
-      // Extract settings
-      const settings = platform.settings as any;
-      
-      // Initialize API client
-      const amazonApi = new AmazonAssociatesApiService(
-        platform.apiKey, 
-        platform.apiSecret, 
-        settings.associateTag,
-        settings.marketplace || 'US'
-      );
-      
-      // Execute search
-      const results = await amazonApi.searchProducts(searchParams);
-      
-      return res.json(results);
-    } catch (error) {
-      console.error('Error searching Amazon products:', error);
-      
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: 'Invalid search parameters' });
+      const validationResult = ProductSearchParamsSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid search parameters',
+          errors: validationResult.error.errors
+        });
       }
       
+      const amazonApi = new AmazonAssociatesApiService(
+        apiKey, 
+        apiSecret, 
+        associateTag,
+        marketplace || 'US'
+      );
+      
+      const { keywords, category, minPrice, maxPrice, limit, sortBy } = req.body;
+      
+      const results = await amazonApi.searchProducts({
+        keywords,
+        category,
+        minPrice,
+        maxPrice,
+        limit,
+        sortBy
+      });
+      
+      return res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      console.error('Error searching Amazon products:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while searching products' 
+        success: false, 
+        message: 'An error occurred while searching for products',
+        error: error.message
       });
     }
   }
@@ -127,45 +96,37 @@ export class AmazonAssociatesController {
    */
   static async getProductDetails(req: Request, res: Response) {
     try {
-      const { platformId, asin } = req.params;
-      
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
+      const { apiKey, apiSecret, associateTag, marketplace, asin } = req.body;
       
       // Validate ASIN
-      AsinLookupSchema.parse({ asin });
-      
-      // Extract settings
-      const settings = platform.settings as any;
-      
-      // Initialize API client
-      const amazonApi = new AmazonAssociatesApiService(
-        platform.apiKey, 
-        platform.apiSecret, 
-        settings.associateTag,
-        settings.marketplace || 'US'
-      );
-      
-      // Get product details
-      const product = await amazonApi.getProductDetails(asin);
-      
-      return res.json(product);
-    } catch (error) {
-      console.error('Error getting Amazon product details:', error);
-      
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: 'Invalid ASIN' });
+      const validationResult = AsinLookupSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid ASIN',
+          errors: validationResult.error.errors
+        });
       }
       
+      const amazonApi = new AmazonAssociatesApiService(
+        apiKey, 
+        apiSecret, 
+        associateTag,
+        marketplace || 'US'
+      );
+      
+      const product = await amazonApi.getProductDetails(asin);
+      
+      return res.json({
+        success: true,
+        data: product
+      });
+    } catch (error) {
+      console.error('Error getting Amazon product details:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting product details' 
+        success: false, 
+        message: 'An error occurred while retrieving product details',
+        error: error.message
       });
     }
   }
@@ -175,37 +136,27 @@ export class AmazonAssociatesController {
    */
   static async getCommissionRates(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
+      const { apiKey, apiSecret, associateTag, marketplace } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Extract settings
-      const settings = platform.settings as any;
-      
-      // Initialize API client
       const amazonApi = new AmazonAssociatesApiService(
-        platform.apiKey, 
-        platform.apiSecret, 
-        settings.associateTag,
-        settings.marketplace || 'US'
+        apiKey, 
+        apiSecret, 
+        associateTag,
+        marketplace || 'US'
       );
       
-      // Get commission rates
       const rates = await amazonApi.getCommissionRates();
       
-      return res.json(rates);
+      return res.json({
+        success: true,
+        data: rates
+      });
     } catch (error) {
       console.error('Error getting Amazon commission rates:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting commission rates' 
+        success: false, 
+        message: 'An error occurred while retrieving commission rates',
+        error: error.message
       });
     }
   }
@@ -215,38 +166,27 @@ export class AmazonAssociatesController {
    */
   static async getEarningsReport(req: Request, res: Response) {
     try {
-      const { platformId } = req.params;
-      const { period } = req.query;
+      const { apiKey, apiSecret, associateTag, marketplace, period } = req.body;
       
-      // Validate platform
-      const platform = await storage.getPlatform(parseInt(platformId));
-      if (!platform) {
-        return res.status(404).json({ error: 'Platform not found' });
-      }
-      
-      if (platform.status !== 'connected') {
-        return res.status(400).json({ error: 'Platform is not connected' });
-      }
-      
-      // Extract settings
-      const settings = platform.settings as any;
-      
-      // Initialize API client
       const amazonApi = new AmazonAssociatesApiService(
-        platform.apiKey, 
-        platform.apiSecret, 
-        settings.associateTag,
-        settings.marketplace || 'US'
+        apiKey, 
+        apiSecret, 
+        associateTag,
+        marketplace || 'US'
       );
       
-      // Get earnings report
-      const report = await amazonApi.getEarningsReport(period as string);
+      const report = await amazonApi.getEarningsReport(period);
       
-      return res.json(report);
+      return res.json({
+        success: true,
+        data: report
+      });
     } catch (error) {
       console.error('Error getting Amazon earnings report:', error);
       return res.status(500).json({ 
-        error: 'An error occurred while getting earnings report' 
+        success: false, 
+        message: 'An error occurred while retrieving earnings report',
+        error: error.message
       });
     }
   }
