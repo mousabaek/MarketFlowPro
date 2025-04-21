@@ -9,6 +9,7 @@ import { AmazonAssociatesController } from "./controllers/amazon-associates-cont
 import { EtsyController } from "./controllers/etsy-controller";
 import { ClickBankController } from "./controllers/clickbank-controller";
 import { AIController } from "./controllers/ai-controller";
+import { OpportunityMatcherController } from "./controllers/opportunity-matcher-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Error handling middleware
@@ -226,6 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/generate-proposal", AIController.generateProposal);
   app.post("/api/ai/analyze-project", AIController.analyzeProject);
   app.post("/api/ai/generate-response", AIController.generateClientResponse);
+  
+  // Opportunity Matching Routes
+  app.post("/api/opportunities/match", OpportunityMatcherController.findMatches);
+  app.get("/api/opportunities/:opportunityId/:platformName/optimize", OpportunityMatcherController.getOptimizationSuggestions);
+  app.post("/api/opportunities/:opportunityId/strategy", OpportunityMatcherController.generateStrategy);
   
   // Theme configuration routes
   app.get("/api/theme", async (req, res) => {
