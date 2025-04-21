@@ -79,7 +79,25 @@ export const platformConnectionSchema = z.object({
   name: z.string().min(1, "Platform name is required"),
   type: z.string().min(1, "Platform type is required"),
   apiKey: z.string().min(1, "API key is required"),
-  apiSecret: z.string().optional()
+  apiSecret: z.string().optional(),
+  settings: z.record(z.any()).optional()
+}).refine((data) => {
+  // Special validation for Amazon Associates
+  if (data.name === 'Amazon Associates' && data.type === 'affiliate') {
+    const settings = data.settings as Record<string, any>;
+    return settings && settings.associateTag && settings.marketplace;
+  }
+  
+  // Special validation for Etsy
+  if (data.name === 'Etsy' && data.type === 'affiliate') {
+    // Optional validation for Etsy as accessToken is not always required
+    return true;
+  }
+  
+  return true;
+}, {
+  message: "Missing required settings for this platform",
+  path: ["settings"]
 });
 
 export const workflowCreationSchema = z.object({

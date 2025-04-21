@@ -14,6 +14,7 @@ export class EtsyController {
       ? (platform.settings as any).accessToken || null
       : null;
   }
+  
   /**
    * Test the connection to Etsy API
    */
@@ -99,7 +100,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Execute search
@@ -143,7 +144,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Get listing details
@@ -184,7 +185,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Get shop details
@@ -221,7 +222,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Get trending listings
@@ -257,7 +258,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Get categories
@@ -294,7 +295,7 @@ export class EtsyController {
       const etsyApi = new EtsyApiService(
         platform.apiKey, 
         platform.apiSecret || null,
-        platform.settings?.accessToken as string || null
+        EtsyController.getAccessToken(platform)
       );
       
       // Get affiliate stats

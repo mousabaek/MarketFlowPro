@@ -196,6 +196,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platforms/:platformId/freelancer/skills", FreelancerController.getSkills);
   app.get("/api/platforms/:platformId/freelancer/bidding-stats", FreelancerController.getBiddingStats);
   app.get("/api/platforms/:platformId/freelancer/current-bids", FreelancerController.getCurrentBids);
+  
+  // Amazon Associates API Routes
+  app.post("/api/platforms/:platformId/amazon/test-connection", AmazonAssociatesController.testConnection);
+  app.get("/api/platforms/:platformId/amazon/products", AmazonAssociatesController.searchProducts);
+  app.get("/api/platforms/:platformId/amazon/products/:asin", AmazonAssociatesController.getProductDetails);
+  app.get("/api/platforms/:platformId/amazon/commission-rates", AmazonAssociatesController.getCommissionRates);
+  app.get("/api/platforms/:platformId/amazon/earnings", AmazonAssociatesController.getEarningsReport);
+  
+  // Etsy API Routes
+  app.post("/api/platforms/:platformId/etsy/test-connection", EtsyController.testConnection);
+  app.get("/api/platforms/:platformId/etsy/listings", EtsyController.searchListings);
+  app.get("/api/platforms/:platformId/etsy/listings/:listingId", EtsyController.getListingDetails);
+  app.get("/api/platforms/:platformId/etsy/shops/:shopId", EtsyController.getShopDetails);
+  app.get("/api/platforms/:platformId/etsy/trending", EtsyController.getTrendingListings);
+  app.get("/api/platforms/:platformId/etsy/categories", EtsyController.getCategories);
+  app.get("/api/platforms/:platformId/etsy/affiliate-stats", EtsyController.getAffiliateStats);
 
   // AI-powered Automation Routes
   app.post("/api/ai/generate-proposal", AIController.generateProposal);
