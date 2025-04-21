@@ -4,7 +4,7 @@ import { Platform, platformConnectionSchema } from "@shared/schema";
 import { PlatformCard } from "@/components/ui/platform-card";
 import { PlatformDetails } from "@/components/ui/platform-details";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Link2, RefreshCw, ShoppingCart, Briefcase, Building, WrenchIcon } from "lucide-react";
+import { PlusCircle, Link2, RefreshCw, ShoppingCart, Briefcase, Building, WrenchIcon, Store, ShoppingBag } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { WolfLogo } from "@/components/ui/wolf-logo";
@@ -124,10 +124,230 @@ export default function Connections() {
 
   // Get platform-specific settings fields
   const getPlatformFields = (type: string) => {
+    const platformName = form.watch("name");
+    
     switch(type) {
       case "affiliate":
-        return (
-          <>
+        // Different affiliate platforms have different fields
+        if (platformName === "Amazon Associates") {
+          return (
+            <>
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your Amazon Access Key" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Your Amazon Access Key ID from the PA-API credentials
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="apiSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Secret</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your Amazon Secret Key" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Your Amazon Secret Access Key from the PA-API credentials
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="settings.associateTag"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Associate Tag</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., mystore-20" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Your Amazon Associates tracking ID
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="settings.marketplace"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marketplace</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || "US"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select marketplace" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="US">United States</SelectItem>
+                        <SelectItem value="CA">Canada</SelectItem>
+                        <SelectItem value="UK">United Kingdom</SelectItem>
+                        <SelectItem value="DE">Germany</SelectItem>
+                        <SelectItem value="FR">France</SelectItem>
+                        <SelectItem value="JP">Japan</SelectItem>
+                        <SelectItem value="IT">Italy</SelectItem>
+                        <SelectItem value="ES">Spain</SelectItem>
+                        <SelectItem value="IN">India</SelectItem>
+                        <SelectItem value="BR">Brazil</SelectItem>
+                        <SelectItem value="MX">Mexico</SelectItem>
+                        <SelectItem value="AU">Australia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Choose the Amazon marketplace you're affiliated with
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          );
+        } else if (platformName === "Etsy") {
+          return (
+            <>
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your Etsy API key" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Your Etsy API key from the developer portal
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="apiSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Secret (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your Etsy API secret" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Only required if using OAuth authentication
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="settings.accessToken"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Token (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your Etsy OAuth access token" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      If you already have an OAuth access token
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          );
+        } else {
+          // Default affiliate platform fields (e.g., Clickbank)
+          return (
+            <>
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your API key" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="apiSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Secret</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter your API secret" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          );
+        }
+        
+      case "freelance":
+        // Different freelance platforms have different fields
+        if (platformName === "Freelancer.com") {
+          return (
+            <>
+              <FormField
+                control={form.control}
+                name="apiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Key</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your Freelancer.com API key" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      You can find your API key in your Freelancer.com developer settings.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="settings.userId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>User ID (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your Freelancer.com user ID" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Your numerical user ID from Freelancer.com
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          );
+        } else {
+          // Default freelance platform fields (e.g., Fiverr, Upwork)
+          return (
             <FormField
               control={form.control}
               name="apiKey"
@@ -137,44 +357,16 @@ export default function Connections() {
                   <FormControl>
                     <Input placeholder="Enter your API key" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    You can find your API key in your account settings.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="apiSecret"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>API Secret</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter your API secret" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        );
-      case "freelance":
-        return (
-          <FormField
-            control={form.control}
-            name="apiKey"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>API Key</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your API key" {...field} />
-                </FormControl>
-                <FormDescription>
-                  You can find your API key in your account settings.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
+          );
+        }
+        
       default:
         return null;
     }
@@ -425,9 +617,9 @@ export default function Connections() {
                       onValueChange={(value) => {
                         field.onChange(value);
                         // Set default type based on platform selection
-                        if (value === "Clickbank") {
+                        if (["Clickbank", "Amazon Associates", "Etsy"].includes(value)) {
                           form.setValue("type", "affiliate");
-                        } else if (["Fiverr", "Upwork"].includes(value)) {
+                        } else if (["Fiverr", "Upwork", "Freelancer.com"].includes(value)) {
                           form.setValue("type", "freelance");
                         }
                       }}
@@ -439,9 +631,16 @@ export default function Connections() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        {/* Affiliate Marketing Platforms */}
                         <SelectItem value="Clickbank">Clickbank</SelectItem>
+                        <SelectItem value="Amazon Associates">Amazon Associates</SelectItem>
+                        <SelectItem value="Etsy">Etsy</SelectItem>
+                        
+                        {/* Freelance Platforms */}
                         <SelectItem value="Fiverr">Fiverr</SelectItem>
                         <SelectItem value="Upwork">Upwork</SelectItem>
+                        <SelectItem value="Freelancer.com">Freelancer.com</SelectItem>
+                        
                         <SelectItem value="Custom">Custom</SelectItem>
                       </SelectContent>
                     </Select>
