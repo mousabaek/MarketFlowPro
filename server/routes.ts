@@ -5,6 +5,7 @@ import { platformConnectionSchema, workflowCreationSchema } from "@shared/schema
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { FreelancerController } from "./controllers/freelancer-controller";
+import { AIController } from "./controllers/ai-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Error handling middleware
@@ -194,6 +195,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platforms/:platformId/freelancer/bidding-stats", FreelancerController.getBiddingStats);
   app.get("/api/platforms/:platformId/freelancer/current-bids", FreelancerController.getCurrentBids);
 
+  // AI-powered Automation Routes
+  app.post("/api/ai/generate-proposal", AIController.generateProposal);
+  app.post("/api/ai/analyze-project", AIController.analyzeProject);
+  app.post("/api/ai/generate-response", AIController.generateClientResponse);
+  
   // Theme configuration routes
   app.get("/api/theme", async (req, res) => {
     try {
