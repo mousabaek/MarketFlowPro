@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Link as LinkIcon, BarChart2, History, Settings } from "lucide-react";
+import { Link as LinkIcon, BarChart2, History, Settings, Target, Brain, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Platform } from "@shared/schema";
 import { WolfLogo } from "./wolf-logo";
@@ -70,6 +70,17 @@ export function Sidebar() {
             >
               <BarChart2 className="mr-3 h-5 w-5" />
               <span>Analytics</span>
+            </div>
+          </li>
+          <li>
+            <div 
+              onClick={() => window.location.href = '/opportunity-matcher'}
+              className={`flex items-center p-2 rounded-md cursor-pointer ${
+                location === "/opportunity-matcher" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+              }`}
+            >
+              <Brain className="mr-3 h-5 w-5" />
+              <span>Opportunity Matcher</span>
             </div>
           </li>
           <li>

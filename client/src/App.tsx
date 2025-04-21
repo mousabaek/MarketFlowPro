@@ -13,6 +13,7 @@ import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import Themes from "@/pages/themes";
 import ComponentShowcase from "@/pages/component-showcase";
+import OpportunityMatcherPage from "@/pages/opportunity-matcher";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
       <Route path="/showcase" component={ComponentShowcase} />
+      <Route path="/opportunity-matcher" component={OpportunityMatcherPage} />
       <Route component={NotFound} />
     </Switch>
   );

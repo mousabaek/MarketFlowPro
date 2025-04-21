@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Link as LinkIcon, BarChart2, History, Settings } from "lucide-react";
+import { Menu, Link as LinkIcon, BarChart2, History, Settings, Brain, Target, Sparkles } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -88,6 +88,16 @@ export function MobileMenu() {
                       }`}>
                         <BarChart2 className="mr-3 h-5 w-5" />
                         <span>Analytics</span>
+                      </a>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/opportunity-matcher">
+                      <a className={`flex items-center p-2 rounded-md ${
+                        location === "/opportunity-matcher" ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                      }`}>
+                        <Brain className="mr-3 h-5 w-5" />
+                        <span>Opportunity Matcher</span>
                       </a>
                     </Link>
                   </li>
