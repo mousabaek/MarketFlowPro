@@ -9,7 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDate } from '@/lib/utils';
-import { Loader2, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Loader2, RefreshCw, AlertTriangle, CheckCircle, Sparkles } from 'lucide-react';
+import { FreelancerProjectDetails } from './freelancer-project-details';
 
 interface FreelancerPlatformProps {
   platform: Platform;
@@ -18,6 +19,7 @@ interface FreelancerPlatformProps {
 export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   
   // Test connection mutation
   const testConnection = useMutation({
@@ -275,7 +277,13 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
           </TabsContent>
           
           <TabsContent value="projects">
-            {projectsQuery.isPending ? (
+            {selectedProjectId ? (
+              <FreelancerProjectDetails 
+                platform={platform}
+                projectId={selectedProjectId}
+                onBack={() => setSelectedProjectId(null)}
+              />
+            ) : projectsQuery.isPending ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
@@ -333,7 +341,13 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" size="sm" className="ml-auto">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="ml-auto"
+                          onClick={() => setSelectedProjectId(project.id)}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                           View Details
                         </Button>
                       </CardFooter>
@@ -397,7 +411,12 @@ export function FreelancerPlatform({ platform }: FreelancerPlatformProps) {
                         </p>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" size="sm" className="ml-auto">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="ml-auto"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                           View Details
                         </Button>
                       </CardFooter>
