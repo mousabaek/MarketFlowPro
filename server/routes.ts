@@ -7,6 +7,7 @@ import { fromZodError } from "zod-validation-error";
 import { FreelancerController } from "./controllers/freelancer-controller";
 import { AmazonAssociatesController } from "./controllers/amazon-associates-controller";
 import { EtsyController } from "./controllers/etsy-controller";
+import { ClickBankController } from "./controllers/clickbank-controller";
 import { AIController } from "./controllers/ai-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -212,6 +213,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platforms/:platformId/etsy/trending", EtsyController.getTrendingListings);
   app.get("/api/platforms/:platformId/etsy/categories", EtsyController.getCategories);
   app.get("/api/platforms/:platformId/etsy/affiliate-stats", EtsyController.getAffiliateStats);
+  
+  // ClickBank API Routes
+  app.post("/api/platforms/:platformId/clickbank/test-connection", ClickBankController.testConnection);
+  app.get("/api/platforms/:platformId/clickbank/products", ClickBankController.searchProducts);
+  app.get("/api/platforms/:platformId/clickbank/products/:productId", ClickBankController.getProductDetails);
+  app.get("/api/platforms/:platformId/clickbank/commission-rates", ClickBankController.getCommissionRates);
+  app.get("/api/platforms/:platformId/clickbank/earnings", ClickBankController.getEarningsReport);
+  app.get("/api/platforms/:platformId/clickbank/top-products", ClickBankController.getTopProducts);
 
   // AI-powered Automation Routes
   app.post("/api/ai/generate-proposal", AIController.generateProposal);

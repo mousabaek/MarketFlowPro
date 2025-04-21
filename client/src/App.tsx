@@ -12,6 +12,7 @@ import PlatformDetails from "@/pages/platform-details";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import Themes from "@/pages/themes";
+import ComponentShowcase from "@/pages/component-showcase";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/platforms/:id" component={PlatformDetails} />
       <Route path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
+      <Route path="/showcase" component={ComponentShowcase} />
       <Route component={NotFound} />
     </Switch>
   );

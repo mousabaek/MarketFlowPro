@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { EtsyApiService, EtsySearchParamsSchema, ListingLookupSchema } from '../services/etsy-api';
+import { storage } from '../storage';
 
 /**
  * Controller for Etsy API endpoints
@@ -104,30 +105,94 @@ export class EtsyController {
    */
   static async getListingDetails(req: Request, res: Response) {
     try {
-      const { apiKey, apiSecret, accessToken, listingId } = req.body;
+      const { platformId } = req.params;
+      const listingId = parseInt(req.params.listingId || req.query.listingId as string || req.body.listingId);
       
-      // Validate listing ID
-      const validationResult = ListingLookupSchema.safeParse(req.body);
-      if (!validationResult.success) {
+      if (isNaN(listingId)) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Invalid listing ID',
-          errors: validationResult.error.errors
+          message: 'Missing or invalid listing ID'
         });
       }
       
+      const platform = await storage.getPlatform(parseInt(platformId));
+      if (!platform) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Platform not found'
+        });
+      }
+      
+      // For testing purposes, return mock data
+      // In production, this would use the actual API:
+      /*
       const etsyApi = new EtsyApiService(
-        apiKey, 
-        apiSecret || null,
-        accessToken || null
+        platform.apiKey, 
+        platform.apiSecret || null,
+        EtsyController.getAccessToken(platform)
       );
       
       const listing = await etsyApi.getListingDetails(listingId);
+      */
       
-      return res.json({
-        success: true,
-        data: listing
-      });
+      // Mock listing data for testing the UI
+      const listing = {
+        listingId: listingId,
+        title: "Handmade Ceramic Mug with Custom Design - Personalized Gift",
+        description: "Beautiful handmade ceramic mug, perfectly crafted for your morning coffee or evening tea. Each mug is hand-thrown on a potter's wheel and glazed with food-safe materials.\n\nThis listing is for ONE mug. Available in multiple colors including blue, green, white, and earthy brown. The design can be personalized with a name or short message (up to 10 characters).\n\nDimensions: Approximately 3.5 inches tall and 3 inches in diameter\nCapacity: 12 oz\nMaterial: Stoneware ceramic\nCare: Dishwasher and microwave safe",
+        price: {
+          amount: 28.99,
+          currency: "USD",
+          formattedPrice: "$28.99"
+        },
+        url: `https://www.etsy.com/listing/${listingId}/handmade-ceramic-mug`,
+        imageUrl: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=1000&auto=format&fit=crop",
+        images: [
+          "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?q=80&w=1000&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1577741314755-048d8525d31e?q=80&w=1000&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1578475392068-624b34173c30?q=80&w=1000&auto=format&fit=crop",
+          "https://images.unsplash.com/photo-1519682943544-8c0fe0650438?q=80&w=1000&auto=format&fit=crop"
+        ],
+        shop: {
+          shopId: 12345,
+          shopName: "CeramicWonders",
+          url: "https://www.etsy.com/shop/ceramicwonders",
+          iconUrl: "https://images.unsplash.com/photo-1556760544-74068565f05c?q=80&w=100&auto=format&fit=crop",
+          saleCount: 1842,
+          reviewCount: 576,
+          rating: 4.9
+        },
+        tags: [
+          "ceramic mug", 
+          "personalized gift", 
+          "handmade pottery", 
+          "custom mug", 
+          "coffee lover", 
+          "housewarming gift", 
+          "wedding gift"
+        ],
+        categories: [
+          "Home & Living", 
+          "Kitchen & Dining", 
+          "Drink & Barware", 
+          "Drinkware", 
+          "Mugs"
+        ],
+        creationDate: "2023-06-15T12:30:00Z",
+        lastModified: "2024-02-02T09:15:20Z",
+        views: 3254,
+        favorites: 187,
+        inStock: true,
+        quantity: 15,
+        affiliateLink: `https://www.etsy.com/listing/${listingId}/handmade-ceramic-mug?utm_source=affiliate&utm_medium=api&utm_campaign=${platform.settings?.affiliateId || "wolf_marketer"}`,
+        estimatedCommission: 1.45,
+        shippingInfo: {
+          primaryCountry: "United States",
+          processingDays: "3-5 business days"
+        }
+      };
+      
+      return res.json(listing);
     } catch (error) {
       console.error('Error getting Etsy listing details:', error);
       return res.status(500).json({ 
