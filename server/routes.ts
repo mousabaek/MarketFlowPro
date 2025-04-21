@@ -5,6 +5,8 @@ import { platformConnectionSchema, workflowCreationSchema } from "@shared/schema
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { FreelancerController } from "./controllers/freelancer-controller";
+import { AmazonAssociatesController } from "./controllers/amazon-associates-controller";
+import { EtsyController } from "./controllers/etsy-controller";
 import { AIController } from "./controllers/ai-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
