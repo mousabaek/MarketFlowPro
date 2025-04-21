@@ -1,5 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+// We need to use the standard Node.js WebSocket types
+import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from "./storage";
 import { platformConnectionSchema, workflowCreationSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -233,6 +235,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/opportunities/:opportunityId/:platformName/optimize", OpportunityMatcherController.getOptimizationSuggestions);
   app.post("/api/opportunities/:opportunityId/strategy", OpportunityMatcherController.generateStrategy);
   
+  // WebSocket test endpoint
+  app.get("/api/websocket-test", (req, res) => {
+    res.json({
+      status: "active",
+      message: "WebSocket server is running",
+      info: "Use the WebSocket status component in the Analytics tab to test live connections"
+    });
+  });
+  
+  // WebSocket broadcast endpoint
+  app.post("/api/websocket-broadcast", (req, res) => {
+    const { message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+    
+    let count = 0;
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'broadcast',
+          message: message,
+          timestamp: new Date().toISOString()
+        }));
+        count++;
+      }
+    });
+    
+    res.json({
+      success: true,
+      clientCount: count,
+      message: `Broadcast sent to ${count} connected clients`
+    });
+  });
+  
   // Theme configuration routes
   app.get("/api/theme", async (req, res) => {
     try {
@@ -280,6 +318,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server on a path different from Vite's HMR
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    clientTracking: true 
+  });
+  
+  // WebSocket connection handler
+  wss.on('connection', (ws, req) => {
+    console.log('WebSocket connection established');
+    
+    // Handle incoming messages
+    ws.on('message', (message) => {
+      console.log('Received WebSocket message:', message.toString());
+      
+      try {
+        // Echo the message back to the client
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ 
+            type: 'response',
+            message: 'Message received',
+            data: message.toString()
+          }));
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    });
+    
+    // Handle connection closing
+    ws.on('close', () => {
+      console.log('WebSocket connection closed');
+    });
+    
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+    
+    // Send a welcome message
+    ws.send(JSON.stringify({ 
+      type: 'info',
+      message: 'Connected to Wolf Auto Marketer WebSocket server'
+    }));
+  });
 
   return httpServer;
 }
