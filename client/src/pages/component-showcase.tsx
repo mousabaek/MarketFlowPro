@@ -95,6 +95,13 @@ export default function ComponentShowcase() {
                   >
                     ClickBank Product Details
                   </Button>
+                  <Button 
+                    variant={activeTab === "clickbank-listings" ? "default" : "outline"} 
+                    className="w-full justify-start"
+                    onClick={() => setActiveTab("clickbank-listings")}
+                  >
+                    ClickBank Product Listings
+                  </Button>
                 </div>
               </CardContent>
               <CardFooter>
@@ -115,12 +122,14 @@ export default function ComponentShowcase() {
                 {activeTab === "etsy" && "Etsy Listing Details"}
                 {activeTab === "freelancer" && "Freelancer Project Details"}
                 {activeTab === "clickbank" && "ClickBank Product Details"}
+                {activeTab === "clickbank-listings" && "ClickBank Product Listings"}
               </CardTitle>
               <CardDescription>
                 {activeTab === "amazon" && "Displays detailed information about an Amazon product with affiliate data"}
                 {activeTab === "etsy" && "Shows a comprehensive view of an Etsy listing with shop information"}
                 {activeTab === "freelancer" && "Presents project details from Freelancer.com with bid submission options"}
                 {activeTab === "clickbank" && "Provides complete information about a ClickBank product including affiliate metrics and promotion suggestions"}
+                {activeTab === "clickbank-listings" && "Browse and search for affiliate products available on the ClickBank marketplace"}
               </CardDescription>
             </CardHeader>
             
@@ -157,6 +166,7 @@ export default function ComponentShowcase() {
               {activeTab === "etsy" && <EtsyListingDetails platformId={platformId} listingId={etsyListingId} />}
               {activeTab === "freelancer" && <FreelancerProjectDetails platformId={platformId} projectId={freelancerProjectId} />}
               {activeTab === "clickbank" && <ClickBankProductDetails platformId={platformId} productId={clickbankProductId} />}
+              {activeTab === "clickbank-listings" && <ClickBankProductListings platformId={platformId} />}
             </CardContent>
           </Card>
         </div>
