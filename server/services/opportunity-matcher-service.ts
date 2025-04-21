@@ -48,6 +48,15 @@ export const RecommendationSchema = z.object({
   keywords: z.array(z.string()).optional(),
   expiresAt: z.string().optional(),
   directLink: z.string().optional(),
+  platformMetadata: z.record(z.string(), z.any()).optional(),
+  marketInsights: z.string().optional(),
+  challengesAndSolutions: z.array(
+    z.object({
+      challenge: z.string(),
+      solution: z.string()
+    })
+  ).optional(),
+  complementarySkills: z.array(z.string()).optional(),
 });
 
 export type Recommendation = z.infer<typeof RecommendationSchema>;
@@ -683,16 +692,38 @@ ${matchRequest.userProfile.timeAvailability ? `Time Availability: ${matchRequest
 ${JSON.stringify(opportunities, null, 2)}
 
 # Task
-Analyze the user profile and available opportunities. Select the top ${matchRequest.matchCount} opportunities that best match the user's skills, interests, and preferences. 
+Analyze the user profile and available opportunities in depth. Select the top ${matchRequest.matchCount} opportunities that best match the user's skills, interests, and preferences. Consider the following factors in your analysis:
+
+## Matching Factors
+1. Skill Alignment: How well the user's skills match the opportunity requirements
+2. Interest Alignment: How well the user's interests align with the opportunity domain
+3. Experience Level: Whether the opportunity matches the user's experience level
+4. Platform Preference: Whether the opportunity is on a platform the user prefers
+5. Category Preference: Whether the opportunity is in a category the user prefers
+6. Earning Model: Whether the opportunity offers the user's preferred earning model
+7. Time Commitment: Whether the opportunity fits the user's available time
+
+## Platform-Specific Considerations
+- For Freelancer opportunities: Consider project budget, timeline, client rating, and required skills
+- For ClickBank opportunities: Consider gravity score, commission rate, average earnings per sale, and conversion rate
+- For Amazon Associates opportunities: Consider commission rate, price point, popularity, and niche relevance
+- For Etsy opportunities: Consider product popularity, commission structure, and audience overlap
 
 For each recommendation, include:
-1. Match score (0-100)
-2. Clear reasoning why this opportunity is a good match
-3. Estimated earnings potential
-4. Time commitment estimate 
-5. Difficulty level (Beginner, Intermediate, Advanced)
-6. Concrete next steps to pursue this opportunity
-7. Any keywords that align with the user's profile
+1. Match score (0-100) calculated based on multiple factors
+2. Detailed, personalized reasoning explaining why this opportunity is an excellent match for this specific user
+3. Precise estimated earnings potential with realistic figures
+4. Specific time commitment estimate with frequency (e.g., "10-15 hours/week for 3 weeks")
+5. Appropriate difficulty level (Beginner, Intermediate, Advanced) with justification
+6. Actionable, step-by-step next steps to pursue this opportunity
+7. Relevant keywords that directly align with the user's profile
+8. Platform-specific metadata relevant to the opportunity type
+
+## Advanced Features
+- Include specific strategies for maximizing success with each opportunity
+- Provide data-driven insights about market conditions for each opportunity
+- Highlight potential challenges and how to overcome them
+- Suggest complementary skills that would enhance success
 
 Return your recommendations in this JSON format:
 {
@@ -713,7 +744,25 @@ Return your recommendations in this JSON format:
       "opportunityType": "freelance/affiliate/both",
       "keywords": ["keyword1", "keyword2"],
       "expiresAt": "ISO date or null",
-      "directLink": "URL or null"
+      "directLink": "URL or null",
+      "platformMetadata": {
+        // For Freelancer opportunities
+        "clientRating": 4.8,
+        "clientHistory": "10+ projects",
+        "proposedBudget": "$X-$Y",
+        
+        // For affiliate opportunities (ClickBank, Amazon, Etsy)
+        "commission": "X%",
+        "conversionRate": "X%",
+        "gravity": 250.5,
+        "popularity": "High/Medium/Low",
+        "recurring": true/false
+      },
+      "marketInsights": "Analysis of current market conditions for this opportunity",
+      "challengesAndSolutions": [
+        {"challenge": "Potential challenge", "solution": "Recommended solution"}
+      ],
+      "complementarySkills": ["skill1", "skill2"]
     }
   ]
 }

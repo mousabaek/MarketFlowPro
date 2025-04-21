@@ -1,5 +1,16 @@
 import { useLocation } from "wouter";
-import { Link as LinkIcon, BarChart2, History, Settings, Target, Brain, Sparkles } from "lucide-react";
+import { 
+  Link as LinkIcon, 
+  BarChart2, 
+  History, 
+  Settings, 
+  Target, 
+  Brain, 
+  Sparkles, 
+  ShoppingCart, 
+  Store, 
+  DollarSign 
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Platform } from "@shared/schema";
 import { WolfLogo } from "./wolf-logo";
@@ -120,6 +131,48 @@ export function Sidebar() {
           </li>
         </ul>
         
+        {/* Platform Integrations Section */}
+        <div className="mt-8">
+          <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Platform Integrations
+          </h3>
+          <ul className="mt-2 space-y-1">
+            <li>
+              <div 
+                onClick={() => window.location.href = '/amazon-associates/1'}
+                className={`flex items-center p-2 rounded-md cursor-pointer ${
+                  location.includes("/amazon-associates") ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                }`}
+              >
+                <ShoppingCart className="mr-3 h-4 w-4" />
+                <span className="text-sm">Amazon Associates</span>
+              </div>
+            </li>
+            <li>
+              <div 
+                onClick={() => window.location.href = '/etsy-platform/1'}
+                className={`flex items-center p-2 rounded-md cursor-pointer ${
+                  location.includes("/etsy-platform") ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                }`}
+              >
+                <Store className="mr-3 h-4 w-4" />
+                <span className="text-sm">Etsy Platform</span>
+              </div>
+            </li>
+            <li>
+              <div 
+                onClick={() => window.location.href = '/clickbank-platform/1'}
+                className={`flex items-center p-2 rounded-md cursor-pointer ${
+                  location.includes("/clickbank-platform") ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
+                }`}
+              >
+                <DollarSign className="mr-3 h-4 w-4" />
+                <span className="text-sm">ClickBank</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
         {platforms.length > 0 && (
           <div className="mt-8">
             <h3 className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -127,12 +180,16 @@ export function Sidebar() {
             </h3>
             <ul className="mt-2 space-y-1">
               {platforms.map((platform) => (
-                <li key={platform.id} className="flex items-center p-2 text-sm">
+                <li 
+                  key={platform.id} 
+                  className="flex items-center p-2 rounded-md cursor-pointer hover:bg-muted"
+                  onClick={() => window.location.href = `/platforms/${platform.id}`}
+                >
                   <div className={`w-2 h-2 rounded-full mr-2 ${
                     platform.status === "connected" ? "bg-green-500" : 
                     platform.status === "limited" ? "bg-amber-500" : "bg-red-500"
                   }`}></div>
-                  <span>{platform.name}</span>
+                  <span className="text-sm">{platform.name}</span>
                 </li>
               ))}
             </ul>

@@ -62,6 +62,14 @@ type Recommendation = {
   keywords?: string[];
   expiresAt?: string;
   directLink?: string;
+  // New fields for enhanced recommendations
+  platformMetadata?: Record<string, any>;
+  marketInsights?: string;
+  challengesAndSolutions?: Array<{
+    challenge: string;
+    solution: string;
+  }>;
+  complementarySkills?: string[];
 };
 
 // Platform options
@@ -187,20 +195,28 @@ export function OpportunityMatcher() {
       };
 
       // Call API
-      const response = await apiRequest("/api/opportunities/match", {
+      const response = await apiRequest<{matches: Recommendation[]}>("/api/opportunities/match", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       // Handle response
-      setRecommendations(response.matches);
-      setSelectedRecommendation(response.matches[0] || null);
-      setActiveTab("results");
-      
-      toast({
-        title: "Opportunities Found!",
-        description: `Found ${response.matches.length} matching opportunities.`,
-      });
+      if (response && response.matches) {
+        setRecommendations(response.matches);
+        setSelectedRecommendation(response.matches.length > 0 ? response.matches[0] : null);
+        setActiveTab("results");
+        
+        toast({
+          title: "Opportunities Found!",
+          description: `Found ${response.matches.length} matching opportunities.`,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Unexpected response format",
+          description: "The server returned an unexpected response format. Please try again."
+        });
+      }
     } catch (error) {
       console.error("Failed to find opportunities:", error);
       toast({
@@ -244,11 +260,11 @@ export function OpportunityMatcher() {
   // Get optimization suggestions for a specific opportunity
   const getOptimizationSuggestions = async (opportunityId: string, platformName: string) => {
     try {
-      const response = await apiRequest(
+      const response = await apiRequest<{suggestions: string[]}>( 
         `/api/opportunities/${opportunityId}/${platformName}/optimize`,
         { method: "GET" }
       );
-      return response.suggestions;
+      return response.suggestions || [];
     } catch (error) {
       console.error("Failed to get optimization suggestions:", error);
       return [];
@@ -263,11 +279,11 @@ export function OpportunityMatcher() {
         userProfile: form.getValues(),
       };
 
-      const response = await apiRequest(`/api/opportunities/${opportunityId}/strategy`, {
+      const response = await apiRequest<{strategy: string}>(`/api/opportunities/${opportunityId}/strategy`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      return response.strategy;
+      return response.strategy || null;
     } catch (error) {
       console.error("Failed to generate strategy:", error);
       return null;
@@ -735,15 +751,87 @@ export function OpportunityMatcher() {
                             </ul>
                           </div>
                         )}
+                        
+                        {selectedRecommendation.marketInsights && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Market Insights:</h4>
+                            <div className="bg-muted/50 p-3 rounded-md">
+                              <p className="text-sm">{selectedRecommendation.marketInsights}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {selectedRecommendation.platformMetadata && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Platform Details:</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Object.entries(selectedRecommendation.platformMetadata).map(([key, value]) => (
+                                <div key={key} className="flex flex-col">
+                                  <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                  <span className="text-sm font-medium">{value?.toString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {selectedRecommendation.challengesAndSolutions && selectedRecommendation.challengesAndSolutions.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Challenges & Solutions:</h4>
+                            <Accordion type="single" collapsible className="w-full">
+                              {selectedRecommendation.challengesAndSolutions.map((item, index) => (
+                                <AccordionItem key={index} value={`challenge-${index}`}>
+                                  <AccordionTrigger className="text-sm">
+                                    {item.challenge}
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <p className="text-sm">{item.solution}</p>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              ))}
+                            </Accordion>
+                          </div>
+                        )}
+                        
+                        {selectedRecommendation.complementarySkills && selectedRecommendation.complementarySkills.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Complementary Skills:</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedRecommendation.complementarySkills.map((skill, index) => (
+                                <Badge key={index} variant="secondary">
+                                  {skill}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
 
                       <CardFooter className="flex flex-col space-y-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                          <Button className="w-full">
-                            <Target className="mr-2 h-4 w-4" />
-                            View Full Details
+                          <Button className="w-full" asChild>
+                            <a 
+                              href={selectedRecommendation.directLink || "#"} 
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={!selectedRecommendation.directLink ? "pointer-events-none opacity-70" : ""}
+                            >
+                              <Target className="mr-2 h-4 w-4" />
+                              View on Platform
+                            </a>
                           </Button>
-                          <Button variant="outline" className="w-full">
+                          <Button 
+                            variant="outline" 
+                            className="w-full"
+                            onClick={() => {
+                              // In a real implementation, this would call an API endpoint to get optimization suggestions
+                              // For now, we'll just show a toast notification
+                              toast({
+                                title: "Optimization Tips",
+                                description: "AI is analyzing this opportunity for optimization suggestions...",
+                              });
+                            }}
+                          >
                             <Lightbulb className="mr-2 h-4 w-4" />
                             Get Optimization Tips
                           </Button>

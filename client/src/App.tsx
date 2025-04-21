@@ -14,6 +14,9 @@ import NotFound from "@/pages/not-found";
 import Themes from "@/pages/themes";
 import ComponentShowcase from "@/pages/component-showcase";
 import OpportunityMatcherPage from "@/pages/opportunity-matcher";
+import AmazonAssociatesPage from "@/pages/amazon-associates";
+import EtsyPlatform from "@/pages/etsy-platform";
+import ClickBankPlatform from "@/pages/clickbank-platform";
 
 function Router() {
   return (
@@ -22,6 +25,9 @@ function Router() {
       <Route path="/workflows" component={Workflows} />
       <Route path="/connections" component={Connections} />
       <Route path="/platforms/:id" component={PlatformDetails} />
+      <Route path="/amazon-associates/:id" component={AmazonAssociatesPage} />
+      <Route path="/etsy-platform/:id" component={EtsyPlatform} />
+      <Route path="/clickbank-platform/:id" component={ClickBankPlatform} />
       <Route path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
       <Route path="/showcase" component={ComponentShowcase} />
