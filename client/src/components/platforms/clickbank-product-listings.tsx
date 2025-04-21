@@ -115,7 +115,7 @@ export function ClickBankProductListings({ platformId }: ClickBankProductListing
     }
     
     // Remove duplicates and sort
-    const uniquePages = [...new Set(pageNumbers)].sort((a, b) => a - b);
+    const uniquePages = Array.from(new Set(pageNumbers)).sort((a, b) => a - b);
     
     return (
       <Pagination>
