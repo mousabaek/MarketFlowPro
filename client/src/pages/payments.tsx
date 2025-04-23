@@ -50,7 +50,8 @@ import {
   CheckCircle2, 
   PiggyBank, 
   AlertCircle, 
-  AlertTriangle
+  AlertTriangle,
+  Building as BankIcon
 } from "lucide-react";
 import { 
   Table, 
@@ -234,6 +235,13 @@ export default function PaymentsPage() {
             Manage your earnings and payments from all connected platforms
           </p>
         </div>
+        <Button 
+          className="gap-2" 
+          onClick={() => setLocation("/bank-transfer")}
+        >
+          <BankIcon className="h-4 w-4" />
+          Transfer to Bank
+        </Button>
       </div>
       
       {/* Payment Overview */}

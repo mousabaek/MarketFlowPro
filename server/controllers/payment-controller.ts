@@ -12,7 +12,22 @@ const withdrawalRequestSchema = z.object({
   accountDetails: z.string().optional(),
 });
 
+const bankTransferSchema = z.object({
+  amount: z.number().min(50, "Minimum transfer amount is $50"),
+  accountId: z.string().min(1, "Bank account is required"),
+  accountName: z.string().optional(),
+  saveAccount: z.boolean().optional().default(false),
+  bankName: z.string().optional(),
+});
+
+const verifyTransferSchema = z.object({
+  code: z.string().length(6, "Verification code must be 6 digits"),
+  transferId: z.string().min(1, "Transfer ID is required"),
+});
+
 export type WithdrawalRequest = z.infer<typeof withdrawalRequestSchema>;
+export type BankTransferRequest = z.infer<typeof bankTransferSchema>;
+export type VerifyTransferRequest = z.infer<typeof verifyTransferSchema>;
 
 // Payment status enum
 export enum PaymentStatus {
@@ -26,6 +41,155 @@ export enum PaymentStatus {
  * Controller for payment-related endpoints
  */
 export class PaymentController {
+  /**
+   * Process a bank transfer request
+   */
+  static async processBankTransfer(req: Request, res: Response) {
+    try {
+      const userId = req.body.userId || 1; // In production, get from authenticated user
+      const validatedData = bankTransferSchema.parse(req.body);
+      
+      // Check if user has sufficient balance
+      const userBalance = await storage.getUserBalance(userId);
+      
+      if (!userBalance || userBalance < validatedData.amount) {
+        return res.status(400).json({
+          error: "Insufficient balance for transfer"
+        });
+      }
+      
+      // Save account if requested
+      if (validatedData.saveAccount) {
+        await storage.createPaymentMethod({
+          userId,
+          type: "bank",
+          accountName: validatedData.accountName || validatedData.accountId,
+          accountDetails: `Bank Account: ${validatedData.accountId}${validatedData.bankName ? ` (${validatedData.bankName})` : ''}`,
+          isDefault: false
+        });
+      }
+      
+      // Generate transfer ID
+      const transferId = `BTR-${Math.floor(Math.random() * 10000000)}`;
+      
+      // In a real app, we would send a verification code via email/SMS
+      // For demo purposes, we'll just generate a 6-digit code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store transfer information (in a real app this would go to the database)
+      // For demo purposes, let's just create an activity
+      await storage.createActivity({
+        type: "payment",
+        title: "Bank Transfer Initiated",
+        description: `Initiated bank transfer of $${validatedData.amount.toFixed(2)} to account ${validatedData.accountId}`,
+        data: {
+          transferId,
+          verificationCode,
+          amount: validatedData.amount,
+          accountId: validatedData.accountId,
+          status: "pending_verification",
+          userId
+        }
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: "Transfer initiated. Check your email for verification code.",
+        transferId,
+        status: "pending_verification",
+        // For demo purposes only - in production never send the code in the response
+        verificationCode
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({
+          error: validationError.message
+        });
+      }
+      console.error("Error processing bank transfer:", error);
+      return res.status(500).json({
+        error: "Failed to process bank transfer"
+      });
+    }
+  }
+  
+  /**
+   * Verify a bank transfer with a verification code
+   */
+  static async verifyBankTransfer(req: Request, res: Response) {
+    try {
+      const userId = req.body.userId || 1; // In production, get from authenticated user
+      const validatedData = verifyTransferSchema.parse(req.body);
+      
+      // In a real app, verify the code against what was sent
+      // For the demo, we'll accept any 6-digit code
+      if (validatedData.code.length !== 6 || !/^\d+$/.test(validatedData.code)) {
+        return res.status(400).json({
+          error: "Invalid verification code. Must be 6 digits."
+        });
+      }
+      
+      // Create a withdrawal record for the verified transfer
+      const withdrawal = await storage.createWithdrawal({
+        userId,
+        amount: req.body.amount || "100.00", // In a real app, get this from saved transfer info
+        paymentMethod: "bank",
+        accountDetails: req.body.accountId || "Bank Account", // In a real app, get this from saved transfer info
+        status: PaymentStatus.PROCESSING,
+        platformFee: ((req.body.amount || 100) * 0.2).toString(), // 20% platform fee
+        netAmount: ((req.body.amount || 100) * 0.8).toString(), // 80% for user
+        requestedAt: new Date(),
+        transactionId: validatedData.transferId,
+        notes: "Verified bank transfer"
+      });
+      
+      // Create an activity for the verification
+      await storage.createActivity({
+        type: "payment",
+        title: "Bank Transfer Verified",
+        description: `Verified bank transfer ${validatedData.transferId}`
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: "Transfer verified successfully. It will be processed in 1-3 business days.",
+        status: "processing",
+        withdrawal
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({
+          error: validationError.message
+        });
+      }
+      console.error("Error verifying bank transfer:", error);
+      return res.status(500).json({
+        error: "Failed to verify bank transfer"
+      });
+    }
+  }
+  
+  /**
+   * Get user's bank accounts
+   */
+  static async getBankAccounts(req: Request, res: Response) {
+    try {
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : 1; // In production, get from authenticated user
+      const paymentMethods = await storage.getUserPaymentMethods(userId);
+      
+      // Filter for bank accounts only
+      const bankAccounts = paymentMethods.filter(pm => pm.type === "bank");
+      
+      return res.json(bankAccounts);
+    } catch (error) {
+      console.error("Error fetching bank accounts:", error);
+      return res.status(500).json({
+        error: "Failed to fetch bank accounts"
+      });
+    }
+  }
   /**
    * Request a withdrawal
    */

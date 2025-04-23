@@ -241,6 +241,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/payments/withdrawal-history", PaymentController.getWithdrawalHistory);
   app.post("/api/payments/withdrawal/:id/cancel", PaymentController.cancelWithdrawal);
   
+  // Bank Transfer Routes
+  app.post("/api/payments/bank-transfer", PaymentController.processBankTransfer);
+  app.post("/api/payments/verify-transfer", PaymentController.verifyBankTransfer);
+  app.get("/api/payments/bank-accounts", PaymentController.getBankAccounts);
+  
   // Financial Information Routes
   app.get("/api/payments/financials", PaymentController.getUserFinancials);
   
