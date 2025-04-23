@@ -6,6 +6,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { ThemeProvider } from "./components/theme-provider";
 import { WebSocketProvider } from "./components/websocket-provider";
 import { Header } from "./components/header";
+import { JoinNotification } from "./components/collaboration/join-notification";
 import AppLayout from "./layouts/app-layout";
 import ProfessionalLayout from "./layouts/professional-layout";
 import Dashboard from "./pages/dashboard";
@@ -113,6 +114,7 @@ function App() {
         <WebSocketProvider initialUserInfo={mockUser}>
           <TooltipProvider>
             <Toaster />
+            <JoinNotification />
             <Router />
           </TooltipProvider>
         </WebSocketProvider>
