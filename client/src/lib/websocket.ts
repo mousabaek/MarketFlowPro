@@ -44,16 +44,13 @@ export function initWebSocket(userInfo?: {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     
     // Build URL with user info as query parameters if provided
-    // In development, we default to localhost:3000 if we can't connect to the current host
     let host = window.location.host;
     
-    // Development fallback for Replit preview
-    if (host.includes('replit.dev') || host.includes('replit.app')) {
-      console.log('Using development fallback for WebSocket connection');
-      host = `${window.location.hostname}:3000`;
-    }
-    
+    // Build WebSocket URL - use the same host as the application
     let wsUrl = `${protocol}//${host}/ws`;
+    
+    // Log connection attempt
+    console.log(`Connecting to WebSocket at: ${wsUrl}`);
     
     if (userInfo) {
       const params = new URLSearchParams();

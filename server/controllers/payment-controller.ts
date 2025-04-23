@@ -66,8 +66,6 @@ export class PaymentController {
         platformFee: (validatedData.amount * 0.2).toString(), // 20% platform fee
         netAmount: (validatedData.amount * 0.8).toString(), // 80% for user
         requestedAt: new Date(),
-        processedAt: null,
-        completedAt: null,
         transactionId: null,
         notes: null
       });

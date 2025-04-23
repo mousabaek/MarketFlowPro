@@ -1,63 +1,17 @@
-import { createContext, useContext, ReactNode } from 'react';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { WebSocketProvider as WSProvider } from '@/hooks/use-websocket-context';
+import { WebSocketStatus } from './websocket-status';
 
-// Context to hold WebSocket connection state and functions
-interface WebSocketContextType {
-  isConnected: boolean;
-  lastMessage: any;
-  error: Error | null;
-  connect: () => void;
-  disconnect: () => void;
-  sendMessage: (message: string | object) => boolean;
-  connectionStats?: {
-    messagesReceived: number;
-    messagesSent: number;
-    lastConnectedAt: string | null;
-    reconnectAttempts: number;
-    connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
-  };
-}
-
-const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
-
-// WebSocket provider component
 interface WebSocketProviderProps {
-  children: ReactNode;
-  userId?: string;
-  userName?: string;
-  avatar?: string;
+  children: React.ReactNode;
 }
 
-export function WebSocketProvider({
-  children,
-  userId,
-  userName,
-  avatar
-}: WebSocketProviderProps) {
-  // Use the WebSocket hook with auto-connect and user info
-  const websocket = useWebSocket({
-    autoConnect: true,
-    userInfo: {
-      userId,
-      userName,
-      avatar
-    }
-  });
-
+export function WebSocketProvider({ children }: WebSocketProviderProps) {
   return (
-    <WebSocketContext.Provider value={websocket}>
-      {children}
-    </WebSocketContext.Provider>
+    <WSProvider>
+      <>
+        {children}
+        <WebSocketStatus />
+      </>
+    </WSProvider>
   );
-}
-
-// Custom hook to use the WebSocket context
-export function useWebSocketContext() {
-  const context = useContext(WebSocketContext);
-  
-  if (context === undefined) {
-    throw new Error('useWebSocketContext must be used within a WebSocketProvider');
-  }
-  
-  return context;
 }

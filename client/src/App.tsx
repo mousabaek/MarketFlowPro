@@ -105,11 +105,7 @@ function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <WebSocketProvider 
-          userId={mockUser.userId}
-          userName={mockUser.userName}
-          avatar={mockUser.avatar}
-        >
+        <WebSocketProvider>
           <TooltipProvider>
             <Toaster />
             <Router />

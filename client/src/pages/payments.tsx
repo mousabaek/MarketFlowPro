@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -124,9 +124,7 @@ export default function PaymentsPage() {
     isLoading: isLoadingFinancials 
   } = useQuery<FinancialData>({
     queryKey: ['/api/payments/financials'],
-    queryFn: async () => {
-      return await apiRequest<FinancialData>('/api/payments/financials');
-    }
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
   
   // Fetch payment methods
@@ -135,9 +133,7 @@ export default function PaymentsPage() {
     isLoading: isLoadingPaymentMethods 
   } = useQuery<PaymentMethod[]>({
     queryKey: ['/api/payments/methods'],
-    queryFn: async () => {
-      return await apiRequest<PaymentMethod[]>('/api/payments/methods');
-    }
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
   
   // Fetch withdrawal history
@@ -146,9 +142,7 @@ export default function PaymentsPage() {
     isLoading: isLoadingWithdrawals 
   } = useQuery<Withdrawal[]>({
     queryKey: ['/api/payments/withdrawal-history'],
-    queryFn: async () => {
-      return await apiRequest<Withdrawal[]>('/api/payments/withdrawal-history');
-    }
+    queryFn: getQueryFn({ on401: "returnNull" })
   });
   
   // Set up withdrawal mutation
@@ -161,13 +155,21 @@ export default function PaymentsPage() {
                        data.paymentMethod === 'bank' ? 'Bank Account Details' : 'Stripe Account'
       };
       
-      return await apiRequest('/api/payments/withdrawal', {
+      const response = await fetch('/api/payments/withdrawal', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(withdrawalData)
       });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || 'Failed to process withdrawal');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       toast({
