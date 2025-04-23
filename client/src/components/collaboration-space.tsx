@@ -10,47 +10,45 @@ import { Badge } from './ui/badge';
 import { Users, MessageSquare, Activity, RefreshCw } from 'lucide-react';
 
 export default function CollaborationSpace() {
-  const { isConnected, sendMessage, connectionStats } = useWebSocketContext();
+  const { 
+    isConnected, 
+    sendCollaborationEvent, 
+    sendJoinEvent, 
+    sendLeaveEvent,
+    connectionStats, 
+    userInfo, 
+    setUserInfo 
+  } = useWebSocketContext();
+  
   const [message, setMessage] = useState('');
-  const [username, setUsername] = useState('');
-  const [userId, setUserId] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Generate a random user ID and name on first load
+  // Generate a random user ID and name on first load if not already set
   useEffect(() => {
-    if (!userId) {
+    if (!userInfo.userId) {
       const randomId = `user-${Math.random().toString(36).substring(2, 15)}`;
       const randomName = `User ${randomId.substring(5, 8)}`;
       
-      setUserId(randomId);
-      setUsername(randomName);
+      setUserInfo({
+        userId: randomId,
+        userName: randomName
+      });
       
-      // Store the user ID globally for cursor tracking to ignore own cursor
+      // Store user info globally for cross-component access
       (window as any)._currentUserId = randomId;
+      (window as any)._currentUserName = randomName;
     }
-  }, [userId]);
+  }, [userInfo, setUserInfo]);
   
   // Join the collaboration space when connection is established
   useEffect(() => {
-    if (isConnected && userId && username) {
-      sendMessage({
-        type: 'join',
-        user: {
-          id: userId,
-          name: username
-        }
-      });
+    if (isConnected && userInfo.userId && userInfo.userName) {
+      // Send join event when component mounts
+      sendJoinEvent();
       
       // Send presence update every minute to indicate user is still active
       const interval = setInterval(() => {
-        sendMessage({
-          type: 'presence',
-          user: {
-            id: userId,
-            name: username
-          },
-          timestamp: new Date().toISOString()
-        });
+        sendCollaborationEvent('presence', 'active');
       }, 60000);
       
       // Leave the space when unmounting
@@ -58,31 +56,17 @@ export default function CollaborationSpace() {
         clearInterval(interval);
         
         if (isConnected) {
-          sendMessage({
-            type: 'leave',
-            user: {
-              id: userId,
-              name: username
-            }
-          });
+          sendLeaveEvent();
         }
       };
     }
-  }, [isConnected, userId, username, sendMessage]);
+  }, [isConnected, userInfo, sendJoinEvent, sendLeaveEvent, sendCollaborationEvent]);
   
   // Send chat message
   const handleSendMessage = () => {
     if (!message.trim()) return;
     
-    sendMessage({
-      type: 'message',
-      user: {
-        id: userId,
-        name: username
-      },
-      message: message
-    });
-    
+    sendCollaborationEvent('message', 'send', message);
     setMessage('');
   };
   
@@ -127,13 +111,13 @@ export default function CollaborationSpace() {
                 
                 <div className="flex items-center gap-2">
                   <Input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={userInfo.userName || ''}
+                    onChange={(e) => setUserInfo({...userInfo, userName: e.target.value})}
                     placeholder="Your display name"
                     className="h-8 text-sm"
                   />
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-xs">
-                    {username.slice(0, 2).toUpperCase()}
+                    {userInfo.userName?.slice(0, 2).toUpperCase() || 'U'}
                   </div>
                 </div>
               </div>

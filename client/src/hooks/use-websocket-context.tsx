@@ -23,11 +23,18 @@ export interface CollaborationEvent {
   details?: string;
 }
 
+export interface UserInfo {
+  userId: string;
+  userName: string;
+  avatar?: string;
+}
+
 export interface WebSocketContextType {
   isConnected: boolean;
   lastMessage: any;
   collaborators: CollaboratorInfo[];
   events: CollaborationEvent[];
+  userInfo: UserInfo;
   connectionStats: {
     messagesReceived: number;
     messagesSent: number;
@@ -37,6 +44,9 @@ export interface WebSocketContextType {
   connectionError: Error | null;
   sendMessage: (message: string | object) => boolean;
   sendCollaborationEvent: (type: string, action: string, target?: string, details?: string) => boolean;
+  sendJoinEvent: () => boolean;
+  sendLeaveEvent: () => boolean;
+  setUserInfo: (userInfo: UserInfo) => void;
   reconnect: () => void;
 }
 
@@ -45,6 +55,7 @@ const defaultContextValue: WebSocketContextType = {
   lastMessage: null,
   collaborators: [],
   events: [],
+  userInfo: { userId: '', userName: '' },
   connectionStats: {
     messagesReceived: 0,
     messagesSent: 0,
@@ -54,16 +65,28 @@ const defaultContextValue: WebSocketContextType = {
   connectionError: null,
   sendMessage: () => false,
   sendCollaborationEvent: () => false,
+  sendJoinEvent: () => false,
+  sendLeaveEvent: () => false,
+  setUserInfo: () => {},
   reconnect: () => {}
 };
 
 export const WebSocketContext = createContext<WebSocketContextType>(defaultContextValue);
 
-export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface WebSocketProviderProps {
+  children: React.ReactNode;
+  initialUserInfo?: UserInfo;
+}
+
+export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ 
+  children,
+  initialUserInfo = { userId: '', userName: '' }
+}) => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const [collaborators, setCollaborators] = useState<CollaboratorInfo[]>([]);
   const [events, setEvents] = useState<CollaborationEvent[]>([]);
+  const [userInfo, setUserInfo] = useState<UserInfo>(initialUserInfo);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
   const [connectionStats, setConnectionStats] = useState<{
     messagesReceived: number;
@@ -225,6 +248,36 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return sendMessage(message);
   };
 
+  // Send join event
+  const sendJoinEvent = (): boolean => {
+    const message = {
+      type: 'join',
+      user: {
+        id: userInfo.userId,
+        name: userInfo.userName,
+        avatar: userInfo.avatar
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    return sendMessage(message);
+  };
+
+  // Send leave event
+  const sendLeaveEvent = (): boolean => {
+    const message = {
+      type: 'leave',
+      user: {
+        id: userInfo.userId,
+        name: userInfo.userName,
+        avatar: userInfo.avatar
+      },
+      timestamp: new Date().toISOString()
+    };
+    
+    return sendMessage(message);
+  };
+
   // Reconnect WebSocket
   const reconnect = () => {
     WebSocketClient.closeWebSocket();
@@ -240,10 +293,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         lastMessage,
         collaborators,
         events,
+        userInfo,
         connectionStats,
         connectionError,
         sendMessage,
         sendCollaborationEvent,
+        sendJoinEvent,
+        sendLeaveEvent,
+        setUserInfo,
         reconnect
       }}
     >

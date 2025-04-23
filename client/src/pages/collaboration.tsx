@@ -10,40 +10,30 @@ import { Textarea } from '../components/ui/textarea';
 import { useWebSocketContext } from '../hooks/use-websocket-context';
 
 export default function CollaborationPage() {
-  const { sendMessage, isConnected } = useWebSocketContext();
-  
+  const { sendMessage, isConnected, userInfo, sendCollaborationEvent } = useWebSocketContext();
+
   // Send a test event when the page loads
   useEffect(() => {
     if (isConnected) {
       setTimeout(() => {
-        sendMessage({
-          type: 'activity',
-          activityType: 'page_view',
-          user: {
-            id: (window as any)._currentUserId,
-            name: 'Test User'
-          },
-          message: 'Viewed the collaboration test page',
-          target: 'collaboration.tsx',
-          timestamp: new Date().toISOString()
-        });
+        sendCollaborationEvent(
+          'activity',
+          'page_view',
+          'collaboration.tsx',
+          'Viewed the collaboration test page'
+        );
       }, 1000);
     }
-  }, [isConnected, sendMessage]);
+  }, [isConnected, sendCollaborationEvent]);
   
   // Function to send a test event
   const sendTestEvent = (type: string) => {
-    sendMessage({
-      type: 'activity',
-      activityType: type,
-      action: `Test ${type} action`,
-      user: {
-        id: (window as any)._currentUserId,
-        name: 'Test User'
-      },
-      target: `test_${type}`,
-      details: `This is a test ${type} event sent at ${new Date().toLocaleTimeString()}`
-    });
+    sendCollaborationEvent(
+      type,
+      `Test ${type} action`,
+      `test_${type}`,
+      `This is a test ${type} event sent at ${new Date().toLocaleTimeString()}`
+    );
   };
   
   return (
@@ -107,14 +97,7 @@ export default function CollaborationPage() {
                 onClick={() => {
                   const textarea = document.getElementById('message') as HTMLTextAreaElement;
                   if (textarea.value.trim()) {
-                    sendMessage({
-                      type: 'message',
-                      message: textarea.value,
-                      user: {
-                        id: (window as any)._currentUserId,
-                        name: 'Test User'
-                      }
-                    });
+                    sendCollaborationEvent('message', 'send', textarea.value);
                     textarea.value = '';
                   }
                 }}

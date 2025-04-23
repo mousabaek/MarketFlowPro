@@ -1,13 +1,14 @@
-import { WebSocketProvider as WSProvider, WebSocketContext } from '../hooks/use-websocket-context';
+import { WebSocketProvider as WSProvider, WebSocketContext, UserInfo } from '../hooks/use-websocket-context';
 import WebSocketStatus from './websocket-status';
 
 interface WebSocketProviderProps {
   children: React.ReactNode;
+  initialUserInfo?: UserInfo;
 }
 
-export function WebSocketProvider({ children }: WebSocketProviderProps) {
+export function WebSocketProvider({ children, initialUserInfo }: WebSocketProviderProps) {
   return (
-    <WSProvider>
+    <WSProvider initialUserInfo={initialUserInfo}>
       <>
         {children}
         <WebSocketStatus />

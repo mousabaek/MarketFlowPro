@@ -11,19 +11,11 @@ type CursorPosition = {
   lastUpdated: number;
 };
 
-// Get a unique temporary user ID for this session
-const getCurrentUserId = () => {
-  if (!(window as any)._currentUserId) {
-    (window as any)._currentUserId = `user_${Math.random().toString(36).substr(2, 9)}`;
-  }
-  return (window as any)._currentUserId;
-};
-
 export default function CursorTracker() {
-  const { isConnected, lastMessage, sendCollaborationEvent, collaborators } = useWebSocketContext();
+  const { isConnected, lastMessage, sendCollaborationEvent, collaborators, userInfo } = useWebSocketContext();
   const [cursors, setCursors] = useState<Record<string, CursorPosition>>({});
-  const userId = useCallback(getCurrentUserId, [])();
-  const userName = (window as any)._currentUserName || 'Guest ' + userId.substring(5, 8);
+  const userId = userInfo.userId;
+  const userName = userInfo.userName || 'Guest';
   
   // Generate a random color for each user
   const generateColor = (userId: string) => {

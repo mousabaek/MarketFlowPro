@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useWebSocketContext } from '../../hooks/use-websocket-context';
+import { useState } from 'react';
+import { useWebSocketContext, CollaborationEvent } from '../../hooks/use-websocket-context';
 import { ScrollArea } from '../ui/scroll-area';
 import { 
   Activity,
@@ -14,51 +14,9 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-type CollaborationEvent = {
-  id: string;
-  type: string;
-  user: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  timestamp: string;
-  action?: string;
-  target?: string;
-  details?: string;
-};
-
 export default function ActivityFeed() {
-  const { lastMessage } = useWebSocketContext();
-  const [events, setEvents] = useState<CollaborationEvent[]>([]);
+  const { events } = useWebSocketContext();
   const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
-
-  // Process incoming events
-  useEffect(() => {
-    if (!lastMessage) return;
-    
-    try {
-      if (lastMessage.type === 'collaboration_event') {
-        const event = lastMessage.event as CollaborationEvent;
-        
-        // Add to events list (limit to most recent 50)
-        setEvents(prev => {
-          // Check if we already have this event
-          if (prev.some(e => e.id === event.id)) {
-            return prev;
-          }
-          
-          // Add new event at the beginning of the array
-          const updated = [event, ...prev];
-          
-          // Limit to 50 events to avoid performance issues
-          return updated.slice(0, 50);
-        });
-      }
-    } catch (err) {
-      console.error('Error processing activity message:', err);
-    }
-  }, [lastMessage]);
 
   // Toggle event details
   const toggleDetails = (id: string) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useWebSocketContext, CollaboratorInfo } from '../../hooks/use-websocket-context';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../ui/hover-card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";

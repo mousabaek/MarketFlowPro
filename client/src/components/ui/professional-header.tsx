@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { WolfLogo } from "./wolf-logo";
+import { Logo } from "../logo";
 import { ThemeToggle } from "./theme-toggle";
 import WebSocketStatus from "@/components/websocket-status";
 
@@ -67,10 +67,9 @@ export function ProfessionalHeader() {
             <span className="sr-only">Toggle menu</span>
           </Button>
           
-          <div className="flex items-center space-x-2" onClick={() => setLocation("/")} style={{cursor: "pointer"}}>
-            <WolfLogo className="h-7 w-7 text-primary" />
-            <span className="hidden text-xl font-bold md:inline-block">Wolf Auto Marketer</span>
-            <span className="text-xl font-bold md:hidden">WAM</span>
+          <div className="flex items-center" onClick={() => setLocation("/")} style={{cursor: "pointer"}}>
+            <Logo className="h-9 w-auto" showText={true} />
+            <span className="text-xl font-bold md:hidden ml-2">WAM</span>
           </div>
         </div>
 
