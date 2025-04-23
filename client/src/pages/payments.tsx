@@ -88,18 +88,44 @@ export default function PaymentsPage() {
   const [paymentLinkCopied, setPaymentLinkCopied] = useState(false);
   const { toast } = useToast();
   
+  // Define types for our API responses
+  type FinancialData = {
+    balance: number;
+    pendingEarnings: number;
+    totalEarnings: number;
+    platformFees: number;
+    earningsBreakdown: Array<{
+      platform: string;
+      amount: number;
+      percentage: number;
+    }>;
+  };
+
+  type PaymentMethod = {
+    id: number;
+    type: string;
+    details: string;
+    isDefault: boolean;
+    lastUsed: string | null;
+  };
+
+  type Withdrawal = {
+    id: string;
+    date: string;
+    type: string;
+    amount: string;
+    status: string;
+    method: string;
+  };
+
   // Fetch user financial data
   const { 
     data: financials, 
     isLoading: isLoadingFinancials 
-  } = useQuery({
+  } = useQuery<FinancialData>({
     queryKey: ['/api/payments/financials'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/payments/financials');
-      if (!response.ok) {
-        throw new Error('Failed to load financial data');
-      }
-      return response.json();
+      return await apiRequest<FinancialData>('/api/payments/financials');
     }
   });
   
@@ -107,14 +133,10 @@ export default function PaymentsPage() {
   const { 
     data: paymentMethods, 
     isLoading: isLoadingPaymentMethods 
-  } = useQuery({
+  } = useQuery<PaymentMethod[]>({
     queryKey: ['/api/payments/methods'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/payments/methods');
-      if (!response.ok) {
-        throw new Error('Failed to load payment methods');
-      }
-      return response.json();
+      return await apiRequest<PaymentMethod[]>('/api/payments/methods');
     }
   });
   
@@ -122,33 +144,30 @@ export default function PaymentsPage() {
   const { 
     data: withdrawals, 
     isLoading: isLoadingWithdrawals 
-  } = useQuery({
+  } = useQuery<Withdrawal[]>({
     queryKey: ['/api/payments/withdrawal-history'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/payments/withdrawal-history');
-      if (!response.ok) {
-        throw new Error('Failed to load withdrawal history');
-      }
-      return response.json();
+      return await apiRequest<Withdrawal[]>('/api/payments/withdrawal-history');
     }
   });
   
   // Set up withdrawal mutation
   const withdrawalMutation = useMutation({
     mutationFn: async (data: WithdrawalFormValues) => {
-      const response = await apiRequest('POST', '/api/payments/withdrawal', {
+      const withdrawalData = {
         amount: parseFloat(data.amount),
         paymentMethod: data.paymentMethod,
         accountDetails: data.paymentMethod === 'paypal' ? 'PayPal Email' : 
-                        data.paymentMethod === 'bank' ? 'Bank Account Details' : 'Stripe Account'
+                       data.paymentMethod === 'bank' ? 'Bank Account Details' : 'Stripe Account'
+      };
+      
+      return await apiRequest('/api/payments/withdrawal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(withdrawalData)
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to process withdrawal');
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -273,7 +292,7 @@ export default function PaymentsPage() {
               className="lg:col-span-2"
             >
               <div className="space-y-5 max-h-96 overflow-y-auto pr-2">
-                {earningsBreakdown.map((item, idx) => (
+                {earningsBreakdown.map((item: { platform: string; amount: number; percentage: number }, idx: number) => (
                   <div key={idx} className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">{item.platform}</span>
@@ -289,7 +308,7 @@ export default function PaymentsPage() {
               
               <div className="mt-6 flex justify-between items-center pt-4 border-t">
                 <span className="font-medium">Total Earnings</span>
-                <span className="font-semibold">${earningsBreakdown.reduce((acc, item) => acc + item.amount, 0).toFixed(2)}</span>
+                <span className="font-semibold">${earningsBreakdown.reduce((acc: number, item: { amount: number }) => acc + item.amount, 0).toFixed(2)}</span>
               </div>
               
               <div className="mt-4 text-xs text-muted-foreground">
@@ -389,7 +408,7 @@ export default function PaymentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentTransactions.map((transaction) => (
+                {recentTransactions.map((transaction: Withdrawal) => (
                   <TableRow key={transaction.id}>
                     <TableCell className="font-medium">{transaction.id}</TableCell>
                     <TableCell>{transaction.date}</TableCell>
@@ -494,7 +513,7 @@ export default function PaymentsPage() {
                     <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
                       <div className="flex justify-between">
                         <span>Available Balance:</span>
-                        <span className="font-medium">$764.80</span>
+                        <span className="font-medium">${(financials?.balance || 0).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Minimum Withdrawal:</span>
@@ -516,8 +535,8 @@ export default function PaymentsPage() {
                       </AlertDescription>
                     </Alert>
                     
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? (
+                    <Button type="submit" className="w-full" disabled={withdrawalMutation.isPending}>
+                      {withdrawalMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
