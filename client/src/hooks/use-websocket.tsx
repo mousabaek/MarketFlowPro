@@ -22,11 +22,32 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [lastMessage, setLastMessage] = useState<string | object | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [connectionStats, setConnectionStats] = useState<{
+    messagesReceived: number;
+    messagesSent: number;
+    lastConnectedAt: string | null;
+    reconnectAttempts: number;
+    connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+  }>({
+    messagesReceived: 0,
+    messagesSent: 0,
+    lastConnectedAt: null,
+    reconnectAttempts: 0,
+    connectionStatus: 'disconnected',
+  });
 
   // Handle WebSocket open event
   const handleOpen = useCallback(() => {
     setIsConnected(true);
     setError(null);
+    
+    // Update connection statistics
+    setConnectionStats(prev => ({
+      ...prev,
+      lastConnectedAt: new Date().toISOString(),
+      connectionStatus: 'connected',
+      reconnectAttempts: 0
+    }));
     
     if (options.onOpen) {
       options.onOpen();
@@ -40,12 +61,24 @@ export function useWebSocket(options: WebSocketOptions = {}) {
       const data = JSON.parse(event.data);
       setLastMessage(data);
       
+      // Update message count
+      setConnectionStats(prev => ({
+        ...prev,
+        messagesReceived: prev.messagesReceived + 1,
+      }));
+      
       if (options.onMessage) {
         options.onMessage(data);
       }
     } catch (e) {
       // Handle plain text message
       setLastMessage(event.data);
+      
+      // Update message count
+      setConnectionStats(prev => ({
+        ...prev,
+        messagesReceived: prev.messagesReceived + 1,
+      }));
       
       if (options.onMessage) {
         options.onMessage(event.data);
@@ -57,6 +90,12 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   const handleClose = useCallback(() => {
     setIsConnected(false);
     
+    // Update connection statistics
+    setConnectionStats(prev => ({
+      ...prev,
+      connectionStatus: 'disconnected',
+    }));
+    
     if (options.onClose) {
       options.onClose();
     }
@@ -66,6 +105,12 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   const handleError = useCallback((event: Event) => {
     const err = new Error('WebSocket connection error');
     setError(err);
+    
+    // Update connection statistics
+    setConnectionStats(prev => ({
+      ...prev,
+      connectionStatus: 'error',
+    }));
     
     if (options.onError) {
       options.onError(err);
@@ -100,7 +145,17 @@ export function useWebSocket(options: WebSocketOptions = {}) {
 
   // Send message through WebSocket
   const sendMessage = useCallback((message: string | object): boolean => {
-    return WebSocketClient.sendMessage(message);
+    const result = WebSocketClient.sendMessage(message);
+    
+    // If message was sent successfully, update the counter
+    if (result) {
+      setConnectionStats(prev => ({
+        ...prev,
+        messagesSent: prev.messagesSent + 1,
+      }));
+    }
+    
+    return result;
   }, []);
 
   // Setup WebSocket connection and listeners
@@ -121,6 +176,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     error,
     connect,
     disconnect,
-    sendMessage
+    sendMessage,
+    connectionStats
   };
 }

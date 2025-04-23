@@ -11,15 +11,27 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useWebSocketContext } from '@/components/websocket-provider';
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Users, Zap, MessageSquare, ChevronsUpDown, Sparkles, Send, FileText } from 'lucide-react';
+import { 
+  ActivityIcon,
+  Clock,
+  ChevronsUpDown, 
+  FileText, 
+  MessageSquare, 
+  Repeat,
+  Send, 
+  Sparkles, 
+  Timer,
+  Users, 
+  Zap 
+} from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
 export default function CollaborationSimulator() {
-  const { isConnected, sendMessage } = useWebSocket();
+  const { isConnected, sendMessage } = useWebSocketContext();
   const [eventType, setEventType] = useState<string>('message');
   const [messageText, setMessageText] = useState<string>('');
   const [actionType, setActionType] = useState<string>('updated');
@@ -31,6 +43,42 @@ export default function CollaborationSimulator() {
   const [eventCount, setEventCount] = useState<number>(0);
   const [lastEventTime, setLastEventTime] = useState<string>('');
   const [simulationActive, setSimulationActive] = useState<boolean>(false);
+  
+  // Track recent events for the log display
+  interface RecentEvent {
+    type: 'message' | 'action' | 'activity';
+    title: string;
+    description: string;
+    time: string;
+  }
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  
+  // Helper functions for event display
+  const getEventTypeIcon = (type: string) => {
+    switch (type) {
+      case 'message':
+        return <MessageSquare className="h-3 w-3 text-blue-500" />;
+      case 'action':
+        return <Zap className="h-3 w-3 text-amber-500" />;
+      case 'activity':
+        return <Users className="h-3 w-3 text-green-500" />;
+      default:
+        return <ActivityIcon className="h-3 w-3 text-gray-500" />;
+    }
+  };
+  
+  const getEventTypeColor = (type: string) => {
+    switch (type) {
+      case 'message':
+        return 'bg-blue-100 dark:bg-blue-900/30';
+      case 'action':
+        return 'bg-amber-100 dark:bg-amber-900/30';
+      case 'activity':
+        return 'bg-green-100 dark:bg-green-900/30';
+      default:
+        return 'bg-gray-100 dark:bg-gray-800';
+    }
+  };
 
   // Function to generate a message
   const generateMessage = () => {
@@ -80,7 +128,8 @@ export default function CollaborationSimulator() {
     
     // Track event statistics
     setEventCount(prev => prev + 1);
-    setLastEventTime(new Date().toLocaleTimeString());
+    const currentTime = new Date().toLocaleTimeString();
+    setLastEventTime(currentTime);
     setSimulationActive(true);
     
     // Create a short flash of activity
@@ -88,29 +137,70 @@ export default function CollaborationSimulator() {
       setSimulationActive(false);
     }, 500);
     
+    // Create message content
+    const messageContent = messageText || generateMessage();
+    const action = actionType || generateAction();
+    const target = targetObject || generateTarget();
+    
+    // Create the event
     if (eventType === 'message') {
       sendMessage({
         type: 'message',
-        message: messageText || generateMessage()
+        message: messageContent
       });
+      
+      // Add to recent events log
+      addRecentEvent({
+        type: 'message',
+        title: 'New Message',
+        description: messageContent,
+        time: currentTime
+      });
+      
     } else if (eventType === 'action') {
+      const details = messageText || 'No additional details';
+      
       sendMessage({
         type: 'user_action',
-        action: actionType || generateAction(),
-        target: targetObject || generateTarget(),
-        details: messageText || 'No additional details'
+        action,
+        target,
+        details
       });
+      
+      // Add to recent events log
+      addRecentEvent({
+        type: 'action',
+        title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${target}`,
+        description: details,
+        time: currentTime
+      });
+      
     } else if (eventType === 'activity') {
+      const activityMessage = messageText || `${action} the ${target} successfully.`;
+      
       sendMessage({
         type: 'activity',
-        activityType: actionType || generateAction(),
-        target: targetObject || generateTarget(),
-        message: messageText || `${actionType || generateAction()} the ${targetObject || generateTarget()} successfully.`
+        activityType: action,
+        target,
+        message: activityMessage
+      });
+      
+      // Add to recent events log
+      addRecentEvent({
+        type: 'activity',
+        title: `Activity: ${action}`,
+        description: activityMessage,
+        time: currentTime
       });
     }
     
     // Clear message input after sending
     setMessageText('');
+  };
+  
+  // Helper to add a recent event to the log (keeps only the last 10)
+  const addRecentEvent = (event: RecentEvent) => {
+    setRecentEvents(prev => [event, ...prev].slice(0, 10));
   };
 
   // Toggle auto simulation
@@ -125,13 +215,19 @@ export default function CollaborationSimulator() {
         const randomEventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
         setEventType(randomEventType);
         
-        // Set random values for other fields
-        setActionType(generateAction());
-        setTargetObject(generateTarget());
+        // Generate random values for the event
+        const randomMessage = generateMessage();
+        const randomAction = generateAction();
+        const randomTarget = generateTarget();
+        const currentTime = new Date().toLocaleTimeString();
+        
+        // Set random values for UI display
+        setActionType(randomAction);
+        setTargetObject(randomTarget);
         
         // Track event statistics
         setEventCount(prev => prev + 1);
-        setLastEventTime(new Date().toLocaleTimeString());
+        setLastEventTime(currentTime);
         setSimulationActive(true);
         
         // Create a short flash of activity
@@ -139,17 +235,59 @@ export default function CollaborationSimulator() {
           setSimulationActive(false);
         }, 500);
         
-        // Send the event
-        sendMessage({
-          type: randomEventType === 'message' ? 'message' : 
-                randomEventType === 'action' ? 'user_action' : 'activity',
-          message: generateMessage(),
-          action: generateAction(),
-          activityType: generateAction(),
-          target: generateTarget(),
-          details: `Auto-generated ${randomEventType} event`
-        });
-        
+        // Prepare event data based on type
+        if (randomEventType === 'message') {
+          // Send the message event
+          sendMessage({
+            type: 'message',
+            message: randomMessage
+          });
+          
+          // Add to recent events log
+          addRecentEvent({
+            type: 'message',
+            title: 'New Message',
+            description: randomMessage,
+            time: currentTime
+          });
+          
+        } else if (randomEventType === 'action') {
+          // Send the action event
+          sendMessage({
+            type: 'user_action',
+            action: randomAction,
+            target: randomTarget,
+            details: `Auto-generated user action`
+          });
+          
+          // Add to recent events log
+          addRecentEvent({
+            type: 'action',
+            title: `${randomAction.charAt(0).toUpperCase() + randomAction.slice(1)} ${randomTarget}`,
+            description: `Auto-generated user action on ${randomTarget}`,
+            time: currentTime
+          });
+          
+        } else if (randomEventType === 'activity') {
+          // Create activity message
+          const activityMessage = `${randomAction} the ${randomTarget} automatically`;
+          
+          // Send the activity event
+          sendMessage({
+            type: 'activity',
+            activityType: randomAction,
+            target: randomTarget,
+            message: activityMessage
+          });
+          
+          // Add to recent events log
+          addRecentEvent({
+            type: 'activity',
+            title: `Activity: ${randomAction}`,
+            description: activityMessage,
+            time: currentTime
+          });
+        }
       }, simulationSpeed * 1000);
       
       setSimulationInterval(interval);
@@ -420,39 +558,95 @@ export default function CollaborationSimulator() {
               </Button>
             </div>
 
-            {/* Simulation details display */}
+            {/* Simulation details and event log display */}
             {(autoSimulation || eventCount > 0) && (
-              <div className="w-full px-3 py-2 bg-muted/50 rounded-md text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-muted-foreground">Simulation Status</span>
-                  {simulationActive && (
-                    <span className="flex items-center gap-1 text-primary">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
-                      Active
-                    </span>
-                  )}
+              <div className="w-full border rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-muted/80 border-b">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm">Simulation Dashboard</span>
+                    {simulationActive && (
+                      <span className="flex items-center gap-1 text-primary text-xs">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                        Active
+                      </span>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Events Sent:</span>
-                    <span>{eventCount}</span>
+                <div className="p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs bg-muted/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <FileText className="h-3 w-3" />
+                      Events Sent
+                    </span>
+                    <span className="font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      {eventCount}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Last Event:</span>
-                    <span>{lastEventTime || 'N/A'}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
+                      Last Event
+                    </span>
+                    <span className="font-mono">{lastEventTime || 'N/A'}</span>
                   </div>
                   {autoSimulation && (
                     <>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Auto-send:</span>
-                        <span className="text-primary">Enabled</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                          <Repeat className="h-3 w-3" />
+                          Auto-send
+                        </span>
+                        <span className="text-primary font-medium">Enabled</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Interval:</span>
-                        <span>{simulationSpeed}s</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                          <Timer className="h-3 w-3" />
+                          Interval
+                        </span>
+                        <span className="font-medium">{simulationSpeed}s</span>
                       </div>
                     </>
+                  )}
+                </div>
+                
+                {/* Event log */}
+                <div className="px-3 py-2 bg-muted/80 border-t border-b">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-xs">Recent Events</span>
+                    <Badge variant="outline" className="text-[10px] h-5 gap-1">
+                      <ActivityIcon className="h-3 w-3" />
+                      Live
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div className="max-h-32 overflow-y-auto divide-y divide-border/30 bg-muted/5">
+                  {recentEvents.length > 0 ? (
+                    recentEvents.map((event, index) => (
+                      <div key={index} className="px-3 py-2 text-xs flex items-start gap-2">
+                        <div className={`p-1 rounded-full ${getEventTypeColor(event.type)}`}>
+                          {getEventTypeIcon(event.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <span className="font-medium truncate">
+                              {event.title}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {event.time}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground truncate">
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-xs text-center text-muted-foreground">
+                      No events yet. Start simulation to see events.
+                    </div>
                   )}
                 </div>
               </div>

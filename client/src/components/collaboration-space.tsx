@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useWebSocketContext } from '@/components/websocket-provider';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,9 +142,15 @@ export default function CollaborationSpace() {
   const eventsEndRef = useRef<HTMLDivElement>(null);
   
   // Use WebSocket hook
-  const { isConnected, lastMessage, sendMessage } = useWebSocket({
-    autoConnect: !simulationMode,
-    onMessage: (data) => {
+  const { isConnected, lastMessage, sendMessage } = useWebSocketContext();
+  
+  // Handle websocket messages
+  useEffect(() => {
+    if (!lastMessage || simulationMode) return;
+    
+    try {
+      const data = lastMessage as any;
+      
       if (data.type === 'welcome') {
         // Handle welcome message with list of active collaborators
         if (data.activeCollaborators) {
@@ -187,8 +193,10 @@ export default function CollaborationSpace() {
           });
         }
       }
+    } catch (err) {
+      console.error("Error processing WebSocket message:", err);
     }
-  });
+  }, [lastMessage, simulationMode]);
   
   // Scroll to bottom of events when new ones arrive
   useEffect(() => {

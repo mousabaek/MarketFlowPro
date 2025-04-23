@@ -1,0 +1,22 @@
+The above error occurred in the <WebSocketStatus> component:
+
+WebSocketStatus@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/components/websocket-status.tsx?t=1745394772107:34:51
+div
+div
+div
+header
+ProfessionalHeader@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/components/ui/professional-header.tsx?t=1745394755104:43:35
+div
+ProfessionalLayout@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/layouts/professional-layout.tsx?t=1745394755104:19:43
+Router@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/App.tsx?t=1745394755104&v=DugFm04MQNGPk9fKbcTOu:45:22
+Provider@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=74ad0a70:38:47
+TooltipProvider@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=74ad0a70:69:7
+WebSocketProvider@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/components/websocket-provider.tsx?t=1745394736114:21:34
+QueryClientProvider@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=74ad0a70:2804:27
+V@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=74ad0a70:44:9
+J@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/@fs/home/runner/workspace/node_modules/.vite/deps/next-themes.js?v=74ad0a70:42:18
+ThemeProvider@https://c42466ff-83ec-4e22-aaf9-e44893b2abb3-00-2ngkdclzvb8c9.spock.replit.dev:3000/src/components/theme-provider.tsx:18:30
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.

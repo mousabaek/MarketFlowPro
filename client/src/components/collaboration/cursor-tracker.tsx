@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useWebSocketContext } from '@/components/websocket-provider';
 
 export interface CursorTrackerProps {
   userId: string;
@@ -18,7 +18,7 @@ export function CursorTracker({
   enabled = true,
   throttleMs = 100
 }: CursorTrackerProps) {
-  const { sendMessage, isConnected } = useWebSocket();
+  const { sendMessage, isConnected } = useWebSocketContext();
   const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
   const lastSentTimeRef = useRef<number>(0);
   

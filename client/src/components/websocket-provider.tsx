@@ -9,6 +9,13 @@ interface WebSocketContextType {
   connect: () => void;
   disconnect: () => void;
   sendMessage: (message: string | object) => boolean;
+  connectionStats?: {
+    messagesReceived: number;
+    messagesSent: number;
+    lastConnectedAt: string | null;
+    reconnectAttempts: number;
+    connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+  };
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);

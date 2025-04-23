@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useWebSocket } from '@/hooks/use-websocket';
+import { useWebSocketContext } from '@/components/websocket-provider';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, Check, Share2, UserPlus, Link as LinkIcon } from 'lucide-react';
@@ -31,18 +31,14 @@ export default function CollaborationPage() {
   );
   
   const pageContainerRef = useRef<HTMLDivElement>(null);
-  const { sendMessage, isConnected } = useWebSocket({
-    onOpen: () => {
+  const { sendMessage, isConnected } = useWebSocketContext();
+  
+  // Handle WebSocket events
+  useEffect(() => {
+    if (isConnected) {
       sendUserAction('opened', 'document', 'Connected to collaborative editing session');
-    },
-    onClose: () => {
-      toast({
-        title: 'Disconnected',
-        description: 'You have been disconnected from the collaboration session',
-        variant: 'destructive'
-      });
     }
-  });
+  }, [isConnected]);
   
   // Save user ID to localStorage
   useEffect(() => {
