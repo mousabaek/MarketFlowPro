@@ -14,9 +14,12 @@ import {
   Clock,
   ArrowRightCircle,
   Plus,
-  Wifi
+  Wifi,
+  Users
 } from "lucide-react";
 import WebSocketStatus from "@/components/websocket-status";
+import CollaborationSpace from "@/components/collaboration-space";
+import CollaborationSimulator from "@/components/collaboration-simulator";
 import { Platform } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -334,6 +337,20 @@ export default function ProfessionalDashboard() {
           <ProfessionalCard title="Performance Analytics" description="Revenue and conversions over time">
             <div className="h-[300px] w-full flex items-center justify-center border rounded">
               <p className="text-muted-foreground">Analytics visualization would appear here</p>
+            </div>
+          </ProfessionalCard>
+          
+          {/* Real-Time Collaboration Visualization */}
+          <ProfessionalCard 
+            title="Real-Time Collaboration" 
+            description="See who's working and what they're doing"
+            icon={<Users className="h-5 w-5" />}
+          >
+            <CollaborationSpace />
+            
+            {/* Add collaboration simulator below collaboration space */}
+            <div className="mt-6 pt-6 border-t">
+              <CollaborationSimulator />
             </div>
           </ProfessionalCard>
           

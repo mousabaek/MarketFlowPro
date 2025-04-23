@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WolfLogo } from "./wolf-logo";
 import { ThemeToggle } from "./theme-toggle";
+import WebSocketStatus from "@/components/websocket-status";
 
 export function ProfessionalHeader() {
   const [location, setLocation] = useLocation();
@@ -200,6 +201,11 @@ export function ProfessionalHeader() {
             <HelpCircle className="h-5 w-5" />
             <span className="sr-only">Help</span>
           </Button>
+          
+          {/* WebSocket Status */}
+          <div className="hidden md:block border-l pl-2 ml-1">
+            <WebSocketStatus />
+          </div>
 
           {/* Theme Toggle */}
           <ThemeToggle />

@@ -323,45 +323,297 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const wss = new WebSocketServer({ 
     server: httpServer, 
     path: '/ws',
-    clientTracking: true 
+    clientTracking: true,
+    // Allow connections from any origin for testing purposes
+    verifyClient: ({ origin, req, secure }: { 
+      origin: string | undefined; 
+      req: any; 
+      secure: boolean;
+    }) => {
+      // In production, you may want to restrict origins
+      // For now, accept all connections for development
+      console.log(`WebSocket connection attempt from origin: ${origin || 'unknown'}`);
+      return true;
+    }
   });
   
+  // Extend WebSocket type to include client-specific properties
+  interface ExtendedWebSocket extends WebSocket {
+    clientId: string;
+  }
+  
+  // Define collaboration event types
+  interface CollaborationEvent {
+    id: string;
+    type: string;
+    user: {
+      id: string;
+      name: string;
+      avatar?: string;
+    };
+    timestamp: string;
+    action?: string;
+    target?: string;
+    details?: string;
+  }
+  
+  // Define client information type
+  interface ClientInfo {
+    ws: ExtendedWebSocket;
+    joinedAt: string;
+    userName: string;
+    avatar?: string;
+  }
+  
+  // Track connected clients and their information
+  const connectedClients = new Map<string, ClientInfo>();
+  
+  // Generate a unique ID for messages
+  function generateId(): string {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
+  }
+  
+  // Broadcast collaboration event to all clients
+  function broadcastCollaborationEvent(event: CollaborationEvent): void {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'collaboration_event',
+          event
+        }));
+      }
+    });
+  }
+  
   // WebSocket connection handler
-  wss.on('connection', (ws, req) => {
+  wss.on('connection', (ws: WebSocket, req) => {
     console.log('WebSocket connection established');
     
+    // Cast WebSocket to extended type
+    const extendedWs = ws as ExtendedWebSocket;
+    
+    // Parse URL query parameters using URLSearchParams
+    const url = req.url || '';
+    const queryString = url.includes('?') ? url.split('?')[1] : '';
+    const queryParams = new URLSearchParams(queryString);
+    
+    // Extract user information from query parameters
+    const clientId = queryParams.get('userId') || `user-${generateId()}`;
+    const userName = queryParams.get('userName') 
+      ? decodeURIComponent(queryParams.get('userName')!) 
+      : `User ${clientId.substring(0, 6)}`;
+    const avatar = queryParams.get('avatar') 
+      ? decodeURIComponent(queryParams.get('avatar')!) 
+      : undefined;
+    
+    // Store client info
+    extendedWs.clientId = clientId;
+    
+    connectedClients.set(clientId, {
+      ws: extendedWs,
+      joinedAt: new Date().toISOString(),
+      userName,
+      avatar
+    });
+    
+    // Create and broadcast join event
+    const joinEvent: CollaborationEvent = {
+      id: generateId(),
+      type: 'join',
+      user: {
+        id: clientId,
+        name: userName,
+        avatar: avatar
+      },
+      timestamp: new Date().toISOString(),
+      action: 'joined the collaboration'
+    };
+    
+    broadcastCollaborationEvent(joinEvent);
+    
     // Handle incoming messages
-    ws.on('message', (message) => {
+    extendedWs.on('message', (message) => {
       console.log('Received WebSocket message:', message.toString());
       
       try {
-        // Echo the message back to the client
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ 
-            type: 'response',
-            message: 'Message received',
-            data: message.toString()
+        const data = JSON.parse(message.toString());
+        
+        // Handle different message types
+        if (data.type === 'cursor_update') {
+          // Forward cursor updates to all clients
+          wss.clients.forEach((client) => {
+            if (client !== extendedWs && client.readyState === WebSocket.OPEN) {
+              client.send(message.toString());
+            }
+          });
+        } else if (data.type === 'user_action') {
+          // Create and broadcast action event
+          const clientInfo = connectedClients.get(extendedWs.clientId);
+          
+          if (clientInfo) {
+            const actionEvent: CollaborationEvent = {
+              id: generateId(),
+              type: 'action',
+              user: {
+                id: extendedWs.clientId,
+                name: clientInfo.userName,
+                avatar: clientInfo.avatar
+              },
+              timestamp: new Date().toISOString(),
+              action: data.action,
+              target: data.target,
+              details: data.details
+            };
+            
+            broadcastCollaborationEvent(actionEvent);
+          }
+        } 
+        // Handle presence messages (for Collaboration Visualization)
+        else if (data.type === 'presence') {
+          const clientInfo = connectedClients.get(extendedWs.clientId);
+          if (clientInfo) {
+            // Update user information if needed
+            if (data.user && data.user.name) {
+              clientInfo.userName = data.user.name;
+            }
+            if (data.user && data.user.avatar) {
+              clientInfo.avatar = data.user.avatar;
+            }
+            
+            // Create and broadcast presence event
+            const presenceEvent: CollaborationEvent = {
+              id: generateId(),
+              type: 'presence',
+              user: {
+                id: extendedWs.clientId,
+                name: clientInfo.userName,
+                avatar: clientInfo.avatar
+              },
+              timestamp: new Date().toISOString(),
+              action: data.action,
+              target: data.target,
+              details: JSON.stringify(data.user)
+            };
+            
+            broadcastCollaborationEvent(presenceEvent);
+          }
+        }
+        // Handle activity messages (for Collaboration Visualization)
+        else if (data.type === 'activity') {
+          const clientInfo = connectedClients.get(extendedWs.clientId);
+          if (clientInfo) {
+            // Create and broadcast activity event
+            const activityEvent: CollaborationEvent = {
+              id: data.id || generateId(),
+              type: 'activity',
+              user: {
+                id: extendedWs.clientId,
+                name: clientInfo.userName,
+                avatar: clientInfo.avatar
+              },
+              timestamp: data.timestamp || new Date().toISOString(),
+              action: data.activityType,
+              target: data.target,
+              details: data.message
+            };
+            
+            broadcastCollaborationEvent(activityEvent);
+          }
+        }
+        // Handle chat messages (for Collaboration Visualization)
+        else if (data.type === 'message') {
+          const clientInfo = connectedClients.get(extendedWs.clientId);
+          if (clientInfo) {
+            // Create and broadcast message event
+            const messageEvent: CollaborationEvent = {
+              id: generateId(),
+              type: 'message',
+              user: {
+                id: extendedWs.clientId,
+                name: clientInfo.userName,
+                avatar: clientInfo.avatar
+              },
+              timestamp: data.timestamp || new Date().toISOString(),
+              action: 'message',
+              details: data.message
+            };
+            
+            broadcastCollaborationEvent(messageEvent);
+          }
+        }
+        else {
+          // Echo other message types back to the client
+          if (extendedWs.readyState === WebSocket.OPEN) {
+            extendedWs.send(JSON.stringify({ 
+              type: 'response',
+              message: 'Message received',
+              data: data
+            }));
+          }
+        }
+      } catch (error: unknown) {
+        console.error('Error processing WebSocket message:', error);
+        // Send error response
+        if (extendedWs.readyState === WebSocket.OPEN) {
+          extendedWs.send(JSON.stringify({ 
+            type: 'error',
+            message: 'Failed to process message',
+            error: error instanceof Error ? error.message : 'Unknown error'
           }));
         }
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
       }
     });
     
     // Handle connection closing
-    ws.on('close', () => {
-      console.log('WebSocket connection closed');
+    extendedWs.on('close', () => {
+      console.log('WebSocket connection closed for client:', extendedWs.clientId);
+      
+      // Create and broadcast leave event
+      if (connectedClients.has(extendedWs.clientId)) {
+        const clientInfo = connectedClients.get(extendedWs.clientId);
+        
+        if (clientInfo) {
+          const leaveEvent: CollaborationEvent = {
+            id: generateId(),
+            type: 'leave',
+            user: {
+              id: extendedWs.clientId,
+              name: clientInfo.userName,
+              avatar: clientInfo.avatar
+            },
+            timestamp: new Date().toISOString(),
+            action: 'left the collaboration'
+          };
+          
+          broadcastCollaborationEvent(leaveEvent);
+        }
+        
+        // Remove client from tracking
+        connectedClients.delete(extendedWs.clientId);
+      }
     });
     
     // Handle errors
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
+    extendedWs.on('error', (error) => {
+      console.error('WebSocket error for client:', extendedWs.clientId, error);
     });
     
-    // Send a welcome message
-    ws.send(JSON.stringify({ 
-      type: 'info',
-      message: 'Connected to Wolf Auto Marketer WebSocket server'
+    // Send welcome message with list of active collaborators
+    const activeCollaborators = Array.from(connectedClients.entries())
+      .filter(([id, _]) => id !== clientId) // Exclude current client
+      .map(([id, client]) => ({
+        userId: id,
+        userName: client.userName,
+        avatar: client.avatar,
+        joinedAt: client.joinedAt
+      }));
+    
+    extendedWs.send(JSON.stringify({ 
+      type: 'welcome',
+      message: 'Connected to Wolf Auto Marketer WebSocket server',
+      clientId: clientId,
+      activeCollaborators
     }));
   });
 

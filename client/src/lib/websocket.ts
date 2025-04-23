@@ -21,8 +21,13 @@ const errorListeners: ErrorListener[] = [];
 
 /**
  * Initialize WebSocket connection
+ * @param userInfo Optional user information to include in the connection
  */
-export function initWebSocket(): WebSocket | null {
+export function initWebSocket(userInfo?: { 
+  userId?: string, 
+  userName?: string, 
+  avatar?: string 
+}): WebSocket | null {
   // WebSocket.OPEN is 1, WebSocket.CONNECTING is 0
   if (socket && (socket.readyState === 1 || socket.readyState === 0)) {
     return socket;
@@ -37,7 +42,29 @@ export function initWebSocket(): WebSocket | null {
     
     // Determine protocol based on page protocol (http or https)
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    // Build URL with user info as query parameters if provided
+    // In development, we default to localhost:3000 if we can't connect to the current host
+    let host = window.location.host;
+    
+    // Development fallback for Replit preview
+    if (host.includes('replit.dev') || host.includes('replit.app')) {
+      console.log('Using development fallback for WebSocket connection');
+      host = `${window.location.hostname}:3000`;
+    }
+    
+    let wsUrl = `${protocol}//${host}/ws`;
+    
+    if (userInfo) {
+      const params = new URLSearchParams();
+      if (userInfo.userId) params.append('userId', userInfo.userId);
+      if (userInfo.userName) params.append('userName', userInfo.userName);
+      if (userInfo.avatar) params.append('avatar', userInfo.avatar);
+      
+      if (params.toString()) {
+        wsUrl += `?${params.toString()}`;
+      }
+    }
     
     // Create WebSocket
     socket = new WebSocket(wsUrl);

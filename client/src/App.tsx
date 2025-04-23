@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { WebSocketProvider } from "@/components/websocket-provider";
 import AppLayout from "@/layouts/app-layout";
 import ProfessionalLayout from "@/layouts/professional-layout";
 import Dashboard from "@/pages/dashboard";
@@ -94,13 +95,26 @@ function Router() {
 }
 
 function App() {
+  // Mock user info for demo purposes - in a real app, this would come from auth context
+  const mockUser = {
+    userId: "user-123",
+    userName: "Demo User",
+    avatar: ""
+  };
+
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <WebSocketProvider 
+          userId={mockUser.userId}
+          userName={mockUser.userName}
+          avatar={mockUser.avatar}
+        >
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </WebSocketProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
