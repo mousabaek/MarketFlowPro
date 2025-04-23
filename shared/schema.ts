@@ -60,7 +60,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Make password optional for social logins
   firstName: text("first_name"),
   lastName: text("last_name"),
   avatar: text("avatar"),
@@ -68,6 +68,10 @@ export const users = pgTable("users", {
   balance: decimal("balance", { precision: 10, scale: 2 }).default("0"),
   pendingBalance: decimal("pending_balance", { precision: 10, scale: 2 }).default("0"),
   stripeCustomerId: text("stripe_customer_id"),
+  googleId: text("google_id").unique(),
+  githubId: text("github_id").unique(),
+  appleId: text("apple_id").unique(),
+  provider: text("provider"), // "local", "google", "github", "apple"
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });

@@ -1,5 +1,8 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GitHubStrategy } from "passport-github2";
+import { Strategy as AppleStrategy } from "passport-apple";
 import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -65,11 +68,12 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Local strategy
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        if (!user || !user.password || !(await comparePasswords(password, user.password))) {
           return done(null, false);
         } else {
           return done(null, user);
@@ -79,6 +83,199 @@ export function setupAuth(app: Express) {
       }
     }),
   );
+
+  // Google OAuth Strategy
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log('Configuring Google OAuth strategy');
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          callbackURL: "/api/auth/google/callback",
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            console.log('Google authentication callback received');
+            console.log('Profile ID:', profile.id);
+            console.log('Profile email:', profile.emails?.[0]?.value);
+            
+            // Check if user exists by googleId
+            let user = await storage.getUserByGoogleId(profile.id);
+            
+            if (!user) {
+              console.log('No user found with this Google ID, checking email...');
+              // Check if user exists by email
+              const email = profile.emails?.[0]?.value;
+              if (email) {
+                user = await storage.getUserByEmail(email);
+              }
+              
+              if (user) {
+                console.log('User found with matching email, linking Google account');
+                // Link Google account to existing user
+                user = await storage.updateUser(user.id, { 
+                  googleId: profile.id,
+                  provider: user.provider || "google"
+                });
+              } else {
+                console.log('Creating new user from Google profile');
+                // Create new user
+                const username = profile.displayName.replace(/\s+/g, '') + Math.floor(Math.random() * 1000);
+                user = await storage.createUser({
+                  username,
+                  email: profile.emails?.[0]?.value || `${username}@example.com`,
+                  firstName: profile.name?.givenName || "",
+                  lastName: profile.name?.familyName || "",
+                  avatar: profile.photos?.[0]?.value || "",
+                  googleId: profile.id,
+                  provider: "google"
+                });
+                console.log('Created new user:', username);
+              }
+            } else {
+              console.log('Existing user found with Google ID');
+            }
+            return done(null, user);
+          } catch (error) {
+            console.error('Error in Google authentication:', error);
+            return done(error);
+          }
+        }
+      )
+    );
+  }
+
+  // GitHub OAuth Strategy
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    console.log('Configuring GitHub OAuth strategy');
+    passport.use(
+      new GitHubStrategy(
+        {
+          clientID: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          callbackURL: "/api/auth/github/callback",
+          scope: ["user:email"],
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            console.log('GitHub authentication callback received');
+            console.log('Profile ID:', profile.id);
+            console.log('Profile username:', profile.username);
+            console.log('Profile email:', profile.emails?.[0]?.value);
+            
+            // Check if user exists by githubId
+            let user = await storage.getUserByGithubId(profile.id);
+            
+            if (!user) {
+              console.log('No user found with this GitHub ID, checking email...');
+              // Check if user exists by email
+              const email = profile.emails?.[0]?.value;
+              if (email) {
+                user = await storage.getUserByEmail(email);
+              }
+              
+              if (user) {
+                console.log('User found with matching email, linking GitHub account');
+                // Link GitHub account to existing user
+                user = await storage.updateUser(user.id, { 
+                  githubId: profile.id,
+                  provider: user.provider || "github"
+                });
+              } else {
+                console.log('Creating new user from GitHub profile');
+                // Create new user
+                const username = profile.username || "github" + Math.floor(Math.random() * 1000);
+                user = await storage.createUser({
+                  username,
+                  email: profile.emails?.[0]?.value || `${username}@example.com`,
+                  firstName: profile.displayName?.split(" ")[0] || "",
+                  lastName: profile.displayName?.split(" ").slice(1).join(" ") || "",
+                  avatar: profile.photos?.[0]?.value || "",
+                  githubId: profile.id,
+                  provider: "github"
+                });
+                console.log('Created new user:', username);
+              }
+            } else {
+              console.log('Existing user found with GitHub ID');
+            }
+            return done(null, user);
+          } catch (error) {
+            console.error('Error in GitHub authentication:', error);
+            return done(error);
+          }
+        }
+      )
+    );
+  }
+  
+  // Apple OAuth Strategy (if credentials are available)
+  if (process.env.APPLE_CLIENT_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY_LOCATION) {
+    console.log('Configuring Apple OAuth strategy');
+    passport.use(
+      new AppleStrategy(
+        {
+          clientID: process.env.APPLE_CLIENT_ID,
+          teamID: process.env.APPLE_TEAM_ID,
+          callbackURL: "/api/auth/apple/callback",
+          keyID: process.env.APPLE_KEY_ID,
+          privateKeyLocation: process.env.APPLE_PRIVATE_KEY_LOCATION,
+          passReqToCallback: true,
+        },
+        async (req, accessToken, refreshToken, profile, done) => {
+          try {
+            console.log('Apple authentication callback received');
+            console.log('Profile ID:', profile.id);
+            console.log('Profile email:', profile.emails?.[0]?.value);
+            
+            // Check if user exists by appleId
+            let user = await storage.getUserByAppleId(profile.id);
+            
+            if (!user) {
+              console.log('No user found with this Apple ID, checking email...');
+              // Check if user exists by email
+              const email = profile.emails?.[0]?.value;
+              if (email) {
+                user = await storage.getUserByEmail(email);
+              }
+              
+              if (user) {
+                console.log('User found with matching email, linking Apple account');
+                // Link Apple account to existing user
+                user = await storage.updateUser(user.id, { 
+                  appleId: profile.id,
+                  provider: user.provider || "apple"
+                });
+              } else {
+                console.log('Creating new user from Apple profile');
+                // Create new user with data from Apple
+                const firstName = profile.name?.firstName || "";
+                const lastName = profile.name?.lastName || "";
+                const username = "apple" + Math.floor(Math.random() * 10000);
+                
+                user = await storage.createUser({
+                  username,
+                  email: profile.emails?.[0]?.value || `${username}@example.com`,
+                  firstName,
+                  lastName,
+                  appleId: profile.id,
+                  provider: "apple"
+                });
+                console.log('Created new user:', username);
+              }
+            } else {
+              console.log('Existing user found with Apple ID');
+            }
+            return done(null, user);
+          } catch (error) {
+            console.error('Error in Apple authentication:', error);
+            return done(error);
+          }
+        }
+      )
+    );
+  }
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
@@ -159,4 +356,47 @@ export function setupAuth(app: Express) {
     
     next();
   });
+
+  // Social login routes
+  // Google
+  app.get(
+    "/api/auth/google",
+    passport.authenticate("google", { scope: ["profile", "email"] })
+  );
+
+  app.get(
+    "/api/auth/google/callback",
+    passport.authenticate("google", { failureRedirect: "/auth" }),
+    (req, res) => {
+      res.redirect("/");
+    }
+  );
+
+  // GitHub
+  app.get(
+    "/api/auth/github",
+    passport.authenticate("github", { scope: ["user:email"] })
+  );
+
+  app.get(
+    "/api/auth/github/callback",
+    passport.authenticate("github", { failureRedirect: "/auth" }),
+    (req, res) => {
+      res.redirect("/");
+    }
+  );
+
+  // Apple
+  app.get(
+    "/api/auth/apple",
+    passport.authenticate("apple")
+  );
+
+  app.post(
+    "/api/auth/apple/callback",
+    passport.authenticate("apple", { failureRedirect: "/auth" }),
+    (req, res) => {
+      res.redirect("/");
+    }
+  );
 }

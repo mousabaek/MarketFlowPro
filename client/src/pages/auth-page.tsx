@@ -14,6 +14,7 @@ import { insertUserSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
 import { CustomInput } from "@/components/custom-input";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -173,6 +174,7 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
+                  <SocialLoginButtons />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -280,6 +282,7 @@ export default function AuthPage() {
                       </Button>
                     </form>
                   </Form>
+                  <SocialLoginButtons />
                 </CardContent>
               </Card>
             </TabsContent>
