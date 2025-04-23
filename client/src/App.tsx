@@ -1,12 +1,13 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { ThemeProvider } from "./components/theme-provider";
 import { WebSocketProvider } from "./components/websocket-provider";
-import { Header } from "./components/header";
 import { JoinNotification } from "./components/collaboration/join-notification";
+import { AuthProvider, useAuth } from "./hooks/use-auth";
+import { ProtectedRoute } from "./lib/protected-route";
 import AppLayout from "./layouts/app-layout";
 import ProfessionalLayout from "./layouts/professional-layout";
 import Dashboard from "./pages/dashboard";
@@ -29,17 +30,33 @@ import WebSocketTestPage from "./pages/websocket-test";
 import CollaborationPage from "./pages/collaboration";
 import StoryGeneratorPage from "./pages/story-generator";
 
+// Admin route component with role check
+function AdminRoute({ component: Component }: { component: () => React.JSX.Element }) {
+  const { user } = useAuth();
+  
+  if (!user || user.role !== 'admin') {
+    return <Redirect to="/" />;
+  }
+  
+  return <Component />;
+}
+
 function Router() {
   // Get the current route to conditionally render layouts
   const [location] = useLocation();
+  const { user } = useAuth();
   
   // Auth route should render without any layout
   if (location === "/auth" || location === "/login" || location === "/signup") {
     return (
       <Switch>
         <Route path="/auth" component={AuthPage} />
-        <Route path="/login" component={AuthPage} />
-        <Route path="/signup" component={AuthPage} />
+        <Route path="/login">
+          <Redirect to="/auth" />
+        </Route>
+        <Route path="/signup">
+          <Redirect to="/auth" />
+        </Route>
       </Switch>
     );
   }
@@ -47,9 +64,11 @@ function Router() {
   // Admin route has special access for owner only
   if (location === "/admin" || location.startsWith("/admin/")) {
     return (
-      <ProfessionalLayout>
-        <AdminDashboard />
-      </ProfessionalLayout>
+      <ProtectedRoute path="/admin" component={() => (
+        <ProfessionalLayout>
+          <AdminRoute component={AdminDashboard} />
+        </ProfessionalLayout>
+      )} />
     );
   }
   
@@ -65,31 +84,31 @@ function Router() {
     location.includes("/etsy-platform") ||
     location.includes("/clickbank-platform");
 
-  // Routes that use the professional layout
+  // Routes that use the professional layout - all protected now
   const professionalRoutes = (
     <Switch>
-      <Route path="/" component={ProfessionalDashboard} />
-      <Route path="/workflows" component={Workflows} />
-      <Route path="/connections" component={Connections} />
-      <Route path="/payments" component={PaymentsPage} />
-      <Route path="/platforms/:id" component={PlatformDetails} />
-      <Route path="/amazon-associates/:id" component={AmazonAssociatesPage} />
-      <Route path="/etsy-platform/:id" component={EtsyPlatform} />
-      <Route path="/clickbank-platform/:id" component={ClickBankPlatform} />
-      <Route path="/opportunity-matcher" component={OpportunityMatcherPage} />
+      <ProtectedRoute path="/" component={ProfessionalDashboard} />
+      <ProtectedRoute path="/workflows" component={Workflows} />
+      <ProtectedRoute path="/connections" component={Connections} />
+      <ProtectedRoute path="/payments" component={PaymentsPage} />
+      <ProtectedRoute path="/platforms/:id" component={PlatformDetails} />
+      <ProtectedRoute path="/amazon-associates/:id" component={AmazonAssociatesPage} />
+      <ProtectedRoute path="/etsy-platform/:id" component={EtsyPlatform} />
+      <ProtectedRoute path="/clickbank-platform/:id" component={ClickBankPlatform} />
+      <ProtectedRoute path="/opportunity-matcher" component={OpportunityMatcherPage} />
     </Switch>
   );
 
   // Routes that use the original layout
   const originalRoutes = (
     <Switch>
-      <Route path="/original" component={Dashboard} />
-      <Route path="/settings" component={Settings} />
+      <ProtectedRoute path="/original" component={Dashboard} />
+      <ProtectedRoute path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
       <Route path="/showcase" component={ComponentShowcase} />
       <Route path="/websocket-test" component={WebSocketTestPage} />
-      <Route path="/collaboration" component={CollaborationPage} />
-      <Route path="/story-generator" component={StoryGeneratorPage} />
+      <ProtectedRoute path="/collaboration" component={CollaborationPage} />
+      <ProtectedRoute path="/story-generator" component={StoryGeneratorPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -102,24 +121,38 @@ function Router() {
   return <AppLayout>{originalRoutes}</AppLayout>;
 }
 
-function App() {
-  // Mock user info for demo purposes - in a real app, this would come from auth context
-  const mockUser = {
-    userId: `user-${Math.random().toString(36).substring(2, 8)}`,
-    userName: "Demo User",
+function AppWithProviders() {
+  const { user } = useAuth();
+  
+  // Create WebSocket user info from authentication data
+  const wsUserInfo = user ? {
+    userId: `user-${user.id}`,
+    userName: user.username,
+    avatar: ""
+  } : {
+    userId: `guest-${Math.random().toString(36).substring(2, 8)}`,
+    userName: "Guest User",
     avatar: ""
   };
 
   return (
+    <WebSocketProvider initialUserInfo={wsUserInfo}>
+      <TooltipProvider>
+        <Toaster />
+        <JoinNotification />
+        <Router />
+      </TooltipProvider>
+    </WebSocketProvider>
+  );
+}
+
+function App() {
+  return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <WebSocketProvider initialUserInfo={mockUser}>
-          <TooltipProvider>
-            <Toaster />
-            <JoinNotification />
-            <Router />
-          </TooltipProvider>
-        </WebSocketProvider>
+        <AuthProvider>
+          <AppWithProviders />
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

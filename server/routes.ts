@@ -13,8 +13,12 @@ import { ClickBankController } from "./controllers/clickbank-controller";
 import { AIController } from "./controllers/ai-controller";
 import { OpportunityMatcherController } from "./controllers/opportunity-matcher-controller";
 import { PaymentController } from "./controllers/payment-controller";
+import { setupAuth } from "./auth";
+import { seed } from "./seed";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
   // Error handling middleware
   app.use((err: any, req: Request, res: Response, next: Function) => {
     if (err instanceof ZodError) {
@@ -339,6 +343,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Seed the database with initial data
+  try {
+    await seed();
+    console.log('Database seeded successfully.');
+  } catch (error) {
+    console.error('Error seeding database:', error);
+  }
   
   // Setup WebSocket server on a path different from Vite's HMR
   const wss = new WebSocketServer({ 
