@@ -16,6 +16,13 @@ import { PaymentController } from "./controllers/payment-controller";
 import { SubscriptionController } from "./controllers/subscription-controller";
 import { AdminController } from "./controllers/admin-controller";
 import { ReportingController } from "./controllers/reporting-controller";
+import { 
+  getAllMaintenanceRequests, 
+  getMaintenanceRequestById, 
+  createMaintenanceRequest, 
+  adminApproveRequest, 
+  adminRejectRequest 
+} from "./controllers/maintenance-controller";
 import { setupAuth } from "./auth";
 import { seed } from "./seed";
 
@@ -493,6 +500,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error instanceof Error ? error.message : "Invalid request" });
     }
   });
+  
+  // AI Maintenance Agent Routes
+  
+  // This middleware ensures the user is authenticated
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    next();
+  };
+  
+  // Get all maintenance requests
+  app.get("/api/maintenance", requireAuth, getAllMaintenanceRequests);
+  
+  // Get a specific maintenance request
+  app.get("/api/maintenance/:id", requireAuth, getMaintenanceRequestById);
+  
+  // Create a new maintenance request
+  app.post("/api/maintenance", requireAuth, createMaintenanceRequest);
+  
+  // Admin approve a maintenance request (requires admin)
+  app.post("/api/maintenance/:id/approve", requireAdmin, adminApproveRequest);
+  
+  // Admin reject a maintenance request (requires admin)
+  app.post("/api/maintenance/:id/reject", requireAdmin, adminRejectRequest);
   
   // WebSocket test endpoint
   app.get("/api/websocket-test", (req, res) => {

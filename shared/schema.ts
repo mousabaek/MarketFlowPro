@@ -182,6 +182,26 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
+// Maintenance Requests schema
+export const maintenanceRequests = pgTable("maintenance_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").default("pending").notNull(), // "pending", "approved", "in_progress", "completed", "rejected"
+  priority: text("priority").default("medium").notNull(), // "low", "medium", "high", "critical"
+  type: text("type").notNull(), // "bug", "feature", "improvement", "question", "other"
+  area: text("area").notNull(), // "frontend", "backend", "database", "api", "payment", "authentication", "other"
+  aiAnalysis: jsonb("ai_analysis"),
+  aiSolution: jsonb("ai_solution"),
+  adminApproval: boolean("admin_approval").default(false),
+  adminNotes: text("admin_notes"),
+  adminId: integer("admin_id"), // The admin who approved or rejected
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  completedAt: timestamp("completed_at")
+});
+
 // Insert schemas
 export const insertPlatformSchema = createInsertSchema(platforms).omit({ id: true });
 export const insertWorkflowSchema = createInsertSchema(workflows).omit({ id: true });
@@ -195,6 +215,7 @@ export const insertPlatformEarningSchema = createInsertSchema(platformEarnings).
 export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPlatformSettingSchema = createInsertSchema(platformSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertMaintenanceRequestSchema = createInsertSchema(maintenanceRequests).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true, aiAnalysis: true, aiSolution: true, adminApproval: true, adminNotes: true, adminId: true });
 
 // Types
 export type Platform = typeof platforms.$inferSelect;
@@ -232,6 +253,9 @@ export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema
 
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
+
+export type MaintenanceRequest = typeof maintenanceRequests.$inferSelect;
+export type InsertMaintenanceRequest = z.infer<typeof insertMaintenanceRequestSchema>;
 
 // Validation schemas for API requests
 export const platformConnectionSchema = z.object({
@@ -283,4 +307,19 @@ export const subscriptionRequestSchema = z.object({
     required_error: "Subscription plan is required",
   }),
   paymentMethodId: z.number().optional()
+});
+
+// Validation schema for maintenance requests
+export const maintenanceRequestSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters long"),
+  description: z.string().min(20, "Please provide a detailed description of the issue"),
+  type: z.enum(["bug", "feature", "improvement", "question", "other"], {
+    required_error: "Type of request is required",
+  }),
+  area: z.enum(["frontend", "backend", "database", "api", "payment", "authentication", "other"], {
+    required_error: "Area of the application is required",
+  }),
+  priority: z.enum(["low", "medium", "high", "critical"], {
+    required_error: "Priority level is required",
+  }).default("medium")
 });
