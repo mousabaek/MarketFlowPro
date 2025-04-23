@@ -187,13 +187,7 @@ export default function BankTransferPage() {
         accountName: bankAccounts.find(acc => acc.id === data.accountId)?.name,
       };
       
-      const response = await apiRequest("/api/payments/bank-transfer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(transferData)
-      });
+      const response = await apiRequest("POST", "/api/payments/bank-transfer", transferData);
       return response;
     },
     onSuccess: (data) => {
@@ -238,13 +232,7 @@ export default function BankTransferPage() {
         // Other fields are only for display purposes on the client
       };
       
-      const response = await apiRequest("/api/payments/verify-transfer", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(verifyData)
-      });
+      const response = await apiRequest("POST", "/api/payments/verify-transfer", verifyData);
       return response;
     },
     onSuccess: (data) => {

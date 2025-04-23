@@ -227,6 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/platforms/:platformId/clickbank/top-products", ClickBankController.getTopProducts);
 
   // AI-powered Automation Routes
+  app.post("/api/ai/generate-story", AIController.generateStory);
   app.post("/api/ai/generate-proposal", AIController.generateProposal);
   app.post("/api/ai/analyze-project", AIController.analyzeProject);
   app.post("/api/ai/generate-response", AIController.generateClientResponse);

@@ -4,13 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Badge } from '../components/ui/badge';
 import { RealTimeCollaboration } from '../components/collaboration/real-time-visualization';
 import { NetworkVisualization } from '../components/collaboration/network-visualization';
+import { SharedWhiteboard } from '../components/collaboration/shared-whiteboard';
+import { ActivityTimeline } from '../components/collaboration/activity-timeline';
+import { ChatPanel } from '../components/collaboration/chat-panel';
 import { useWebSocketContext } from '../hooks/use-websocket-context';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { 
   Users, Activity, MessageSquare, 
   Zap, Network, Share2, MousePointer, 
-  RefreshCw, Check, ArrowRight
+  RefreshCw, Check, ArrowRight, Edit
 } from 'lucide-react';
 
 export default function CollaborationPage() {
@@ -141,170 +144,101 @@ export default function CollaborationPage() {
         
         {/* Visualization Tab */}
         <TabsContent value="visualization" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MousePointer className="h-5 w-5 text-primary" />
-                  <CardTitle>Real-Time Collaboration Visualization</CardTitle>
-                </div>
-                <Badge variant="outline" className="gap-1">
-                  <Zap className="h-3 w-3" />
-                  Live
-                </Badge>
-              </div>
-              <CardDescription>
-                See where team members are working in real-time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RealTimeCollaboration />
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Network className="h-5 w-5 text-primary" />
-                  <CardTitle>Collaboration Network</CardTitle>
-                </div>
-                <Badge variant="outline" className="gap-1">
-                  <Zap className="h-3 w-3" />
-                  Live
-                </Badge>
-              </div>
-              <CardDescription>
-                See the connections between team members
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <NetworkVisualization />
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Features Card */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Visualization Features</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MousePointer className="h-5 w-5 text-primary" />
+                    <CardTitle>Real-Time Cursor Tracking</CardTitle>
+                  </div>
+                  <Badge variant="outline" className="gap-1">
+                    <Zap className="h-3 w-3" />
+                    Live
+                  </Badge>
+                </div>
+                <CardDescription>
+                  See where team members are working in real-time
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2">
-                    <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                      <MousePointer className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Live Cursor Tracking</p>
-                      <p className="text-xs text-muted-foreground">See where your collaborators are focusing</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                      <Share2 className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Presence Awareness</p>
-                      <p className="text-xs text-muted-foreground">Know who's online and active</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="rounded-full bg-primary/10 p-1 mt-0.5">
-                      <Activity className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Activity Tracking</p>
-                      <p className="text-xs text-muted-foreground">Monitor collaboration actions in real-time</p>
-                    </div>
-                  </li>
-                </ul>
+                <RealTimeCollaboration />
               </CardContent>
             </Card>
             
-            {/* Getting Started Card */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Getting Started</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Network className="h-5 w-5 text-primary" />
+                    <CardTitle>Collaboration Network</CardTitle>
+                  </div>
+                  <Badge variant="outline" className="gap-1">
+                    <Zap className="h-3 w-3" />
+                    Live
+                  </Badge>
+                </div>
+                <CardDescription>
+                  See the connections between team members
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted text-xs font-medium">
-                      1
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Set your display name</p>
-                      <p className="text-xs text-muted-foreground">Customize how others see you during collaboration</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted text-xs font-medium">
-                      2
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Check connection status</p>
-                      <p className="text-xs text-muted-foreground">Ensure your WebSocket connection is active</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted text-xs font-medium">
-                      3
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Share the page with others</p>
-                      <p className="text-xs text-muted-foreground">Invite collaborators to join</p>
-                    </div>
-                  </div>
+                <NetworkVisualization />
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Edit className="h-5 w-5 text-primary" />
+                  <CardTitle>Shared Whiteboard</CardTitle>
                 </div>
-                
-                <div className="mt-4">
-                  <Button variant="outline" className="w-full text-sm" size="sm">
-                    <ArrowRight className="h-3.5 w-3.5 mr-1" /> Learn more about collaboration
-                  </Button>
-                </div>
+                <Badge variant="outline" className="gap-1">
+                  <Zap className="h-3 w-3" />
+                  Live
+                </Badge>
+              </div>
+              <CardDescription>
+                Draw and collaborate in real-time with your team
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SharedWhiteboard />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Activity Feed Tab */}
+        <TabsContent value="activity">
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="flex-1">
+              <CardHeader>
+                <CardTitle>Activity Timeline</CardTitle>
+                <CardDescription>
+                  Track all actions and events from your team in real-time
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ActivityTimeline />
               </CardContent>
             </Card>
           </div>
         </TabsContent>
         
-        {/* Activity Feed Tab */}
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Feed</CardTitle>
-              <CardDescription>
-                Track all actions and events from your team in real-time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center p-8 text-center">
-                <div>
-                  <Activity className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-lg font-medium mb-1">Activity feed coming soon</h3>
-                  <p className="text-muted-foreground">We're working on an enhanced activity tracking system</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
         {/* Chat Tab */}
         <TabsContent value="chat">
-          <Card>
+          <Card className="h-[700px]">
             <CardHeader>
               <CardTitle>Team Chat</CardTitle>
               <CardDescription>
                 Communicate with your team in real-time
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-center p-8 text-center">
-                <div>
-                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-lg font-medium mb-1">Chat feature coming soon</h3>
-                  <p className="text-muted-foreground">Our development team is implementing a robust chat system</p>
-                </div>
+            <CardContent className="h-full pb-6">
+              <div className="h-full">
+                <ChatPanel />
               </div>
             </CardContent>
           </Card>

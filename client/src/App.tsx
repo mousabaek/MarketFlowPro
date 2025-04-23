@@ -27,6 +27,7 @@ import PaymentsPage from "./pages/payments";
 import AdminDashboard from "./pages/admin-dashboard";
 import WebSocketTestPage from "./pages/websocket-test";
 import CollaborationPage from "./pages/collaboration";
+import StoryGeneratorPage from "./pages/story-generator";
 
 function Router() {
   // Get the current route to conditionally render layouts
@@ -88,6 +89,7 @@ function Router() {
       <Route path="/showcase" component={ComponentShowcase} />
       <Route path="/websocket-test" component={WebSocketTestPage} />
       <Route path="/collaboration" component={CollaborationPage} />
+      <Route path="/story-generator" component={StoryGeneratorPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -103,7 +105,7 @@ function Router() {
 function App() {
   // Mock user info for demo purposes - in a real app, this would come from auth context
   const mockUser = {
-    userId: "user-123",
+    userId: `user-${Math.random().toString(36).substring(2, 8)}`,
     userName: "Demo User",
     avatar: ""
   };
