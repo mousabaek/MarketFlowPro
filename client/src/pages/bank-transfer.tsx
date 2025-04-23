@@ -190,11 +190,14 @@ export default function BankTransferPage() {
       const response = await apiRequest("POST", "/api/payments/bank-transfer", transferData);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
       toast({
         title: "Transfer initiated",
         description: "Verification code has been sent to your email",
       });
+      
+      // Parse the response data
+      const data = await response.json();
       
       // Store transferId from response
       if (data && data.transferId) {
@@ -235,7 +238,14 @@ export default function BankTransferPage() {
       const response = await apiRequest("POST", "/api/payments/verify-transfer", verifyData);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: async (response) => {
+      // Parse the response data if needed
+      try {
+        const data = await response.json();
+      } catch (e) {
+        // If not JSON, that's fine, we don't need the data
+      }
+      
       toast({
         title: "Transfer verified",
         description: "Your transfer is being processed and will be completed in 1-3 business days",
