@@ -2,7 +2,12 @@ import {
   platforms, Platform, InsertPlatform, 
   workflows, Workflow, InsertWorkflow,
   tasks, Task, InsertTask,
-  activities, Activity, InsertActivity
+  activities, Activity, InsertActivity,
+  users, User, InsertUser,
+  paymentMethods, PaymentMethod, InsertPaymentMethod,
+  withdrawals, Withdrawal, InsertWithdrawal,
+  transactions, InsertTransaction,
+  platformEarnings, PlatformEarning, InsertPlatformEarning
 } from "@shared/schema";
 
 // Interface for storage operations
@@ -33,6 +38,38 @@ export interface IStorage {
   // Activity operations
   getActivities(limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+  updateStripeCustomerId(id: number, customerId: string): Promise<User | undefined>;
+
+  // Payment operations
+  getUserBalance(userId: number): Promise<number>;
+  getUserPendingEarnings(userId: number): Promise<number>;
+  updateUserBalance(userId: number, balance: number): Promise<User | undefined>;
+  getUserDailyWithdrawals(userId: number): Promise<Withdrawal[]>;
+  getUserTotalEarnings(userId: number): Promise<number>;
+  getUserPlatformFees(userId: number): Promise<number>;
+  getUserPlatformEarnings(userId: number): Promise<PlatformEarning[]>;
+
+  // Withdrawal operations
+  createWithdrawal(withdrawal: InsertWithdrawal): Promise<Withdrawal>;
+  getWithdrawal(id: number): Promise<Withdrawal | undefined>;
+  getUserWithdrawals(userId: number): Promise<Withdrawal[]>;
+  updateWithdrawal(id: number, data: Partial<Withdrawal>): Promise<Withdrawal | undefined>;
+
+  // Payment methods operations
+  getUserPaymentMethods(userId: number): Promise<PaymentMethod[]>;
+  getPaymentMethod(id: number): Promise<PaymentMethod | undefined>;
+  createPaymentMethod(method: InsertPaymentMethod): Promise<PaymentMethod>;
+  updatePaymentMethod(id: number, data: Partial<PaymentMethod>): Promise<PaymentMethod | undefined>;
+  deletePaymentMethod(id: number): Promise<boolean>;
+
+  // Earnings operations
+  recordPlatformEarning(earning: InsertPlatformEarning): Promise<PlatformEarning>;
 }
 
 // In-memory storage implementation

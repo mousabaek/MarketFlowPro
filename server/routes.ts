@@ -12,6 +12,7 @@ import { EtsyController } from "./controllers/etsy-controller";
 import { ClickBankController } from "./controllers/clickbank-controller";
 import { AIController } from "./controllers/ai-controller";
 import { OpportunityMatcherController } from "./controllers/opportunity-matcher-controller";
+import { PaymentController } from "./controllers/payment-controller";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Error handling middleware
@@ -234,6 +235,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/opportunities/match", OpportunityMatcherController.findMatches);
   app.get("/api/opportunities/:opportunityId/:platformName/optimize", OpportunityMatcherController.getOptimizationSuggestions);
   app.post("/api/opportunities/:opportunityId/strategy", OpportunityMatcherController.generateStrategy);
+  
+  // Payment and Withdrawal Routes
+  app.post("/api/payments/withdrawal", PaymentController.requestWithdrawal);
+  app.get("/api/payments/withdrawal-history", PaymentController.getWithdrawalHistory);
+  app.post("/api/payments/withdrawal/:id/cancel", PaymentController.cancelWithdrawal);
+  
+  // Financial Information Routes
+  app.get("/api/payments/financials", PaymentController.getUserFinancials);
+  
+  // Payment Methods Routes
+  app.get("/api/payments/methods", PaymentController.getPaymentMethods);
+  app.post("/api/payments/methods", PaymentController.addPaymentMethod);
+  app.patch("/api/payments/methods/:id", PaymentController.updatePaymentMethod);
+  app.delete("/api/payments/methods/:id", PaymentController.deletePaymentMethod);
   
   // WebSocket test endpoint
   app.get("/api/websocket-test", (req, res) => {

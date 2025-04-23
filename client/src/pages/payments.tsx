@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Tabs, 
   TabsContent, 
@@ -33,6 +34,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -83,9 +85,91 @@ type WithdrawalFormValues = z.infer<typeof withdrawalSchema>;
 export default function PaymentsPage() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("dashboard");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentLinkCopied, setPaymentLinkCopied] = useState(false);
   const { toast } = useToast();
+  
+  // Fetch user financial data
+  const { 
+    data: financials, 
+    isLoading: isLoadingFinancials 
+  } = useQuery({
+    queryKey: ['/api/payments/financials'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/payments/financials');
+      if (!response.ok) {
+        throw new Error('Failed to load financial data');
+      }
+      return response.json();
+    }
+  });
+  
+  // Fetch payment methods
+  const { 
+    data: paymentMethods, 
+    isLoading: isLoadingPaymentMethods 
+  } = useQuery({
+    queryKey: ['/api/payments/methods'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/payments/methods');
+      if (!response.ok) {
+        throw new Error('Failed to load payment methods');
+      }
+      return response.json();
+    }
+  });
+  
+  // Fetch withdrawal history
+  const { 
+    data: withdrawals, 
+    isLoading: isLoadingWithdrawals 
+  } = useQuery({
+    queryKey: ['/api/payments/withdrawal-history'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/payments/withdrawal-history');
+      if (!response.ok) {
+        throw new Error('Failed to load withdrawal history');
+      }
+      return response.json();
+    }
+  });
+  
+  // Set up withdrawal mutation
+  const withdrawalMutation = useMutation({
+    mutationFn: async (data: WithdrawalFormValues) => {
+      const response = await apiRequest('POST', '/api/payments/withdrawal', {
+        amount: parseFloat(data.amount),
+        paymentMethod: data.paymentMethod,
+        accountDetails: data.paymentMethod === 'paypal' ? 'PayPal Email' : 
+                        data.paymentMethod === 'bank' ? 'Bank Account Details' : 'Stripe Account'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process withdrawal');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Withdrawal request submitted",
+        description: `Your withdrawal will be processed in 1-3 business days.`,
+      });
+      
+      withdrawalForm.reset();
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/payments/financials'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/payments/withdrawal-history'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Withdrawal failed",
+        description: error.message || "There was an error processing your withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   const withdrawalForm = useForm<WithdrawalFormValues>({
     resolver: zodResolver(withdrawalSchema),
@@ -96,27 +180,7 @@ export default function PaymentsPage() {
   });
 
   async function onWithdrawalSubmit(values: WithdrawalFormValues) {
-    setIsSubmitting(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log(values);
-      
-      toast({
-        title: "Withdrawal request submitted",
-        description: `Your withdrawal of $${values.amount} will be processed in 1-3 business days.`,
-      });
-      
-      withdrawalForm.reset();
-    } catch (error) {
-      toast({
-        title: "Withdrawal failed",
-        description: "There was an error processing your withdrawal. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    withdrawalMutation.mutate(values);
   }
 
   const copyPaymentLink = () => {
@@ -130,57 +194,15 @@ export default function PaymentsPage() {
     setTimeout(() => setPaymentLinkCopied(false), 3000);
   };
 
-  // Mock data for transactions
-  const recentTransactions = [
-    { 
-      id: "TX98765", 
-      date: "Apr 18, 2025", 
-      type: "Withdrawal", 
-      amount: "$420.00", 
-      status: "Complete",
-      method: "PayPal",
-    },
-    { 
-      id: "TX87654", 
-      date: "Apr 15, 2025", 
-      type: "Commission", 
-      amount: "$56.40", 
-      status: "Complete",
-      method: "Amazon Associates",
-    },
-    { 
-      id: "TX76543", 
-      date: "Apr 12, 2025", 
-      type: "Commission", 
-      amount: "$245.60", 
-      status: "Complete",
-      method: "ClickBank",
-    },
-    { 
-      id: "TX65432", 
-      date: "Apr 10, 2025", 
-      type: "Withdrawal", 
-      amount: "$750.00", 
-      status: "Complete",
-      method: "Bank Transfer",
-    },
-    { 
-      id: "TX54321", 
-      date: "Apr 8, 2025", 
-      type: "Commission", 
-      amount: "$128.80", 
-      status: "Complete",
-      method: "ClickBank",
-    },
-  ];
-
-  // Mock data for earnings breakdown
-  const earningsBreakdown = [
-    { platform: "Amazon Associates", amount: 485.60, percentage: 32 },
-    { platform: "ClickBank", amount: 642.40, percentage: 43 },
-    { platform: "Etsy", amount: 174.50, percentage: 12 },
-    { platform: "Freelancer", amount: 198.50, percentage: 13 },
-  ];
+  // Format transactions from withdrawal history
+  const recentTransactions = withdrawals || [];
+  
+  // Format earnings breakdown from financial data
+  const earningsBreakdown = financials?.earningsBreakdown || [];
+  
+  // Loading states
+  const isLoading = isLoadingFinancials || isLoadingPaymentMethods || isLoadingWithdrawals;
+  
 
   return (
     <div className="space-y-8">
@@ -195,31 +217,43 @@ export default function PaymentsPage() {
       
       {/* Payment Overview */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <ProfessionalMetricCard
-          title="Available Balance"
-          value="$764.80"
-          description="Ready to withdraw"
-          icon={<Wallet className="h-5 w-5" />}
-        />
-        <ProfessionalMetricCard
-          title="Pending Earnings"
-          value="$128.50"
-          description="Processing (3-5 days)"
-          icon={<DollarSign className="h-5 w-5" />}
-        />
-        <ProfessionalMetricCard
-          title="Total Earnings"
-          value="$4,256.75"
-          description="Lifetime earnings"
-          trend={{ value: 18.5, isPositive: true }}
-          icon={<CreditCard className="h-5 w-5" />}
-        />
-        <ProfessionalMetricCard
-          title="Admin Fee"
-          value="20%"
-          description="Platform commission"
-          icon={<PiggyBank className="h-5 w-5" />}
-        />
+        {isLoading ? (
+          <>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="rounded-lg border p-6 bg-card">
+                <div className="h-12 animate-pulse w-1/2 bg-muted-foreground/20 rounded mb-2"></div>
+                <div className="h-6 animate-pulse w-full bg-muted-foreground/10 rounded"></div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <ProfessionalMetricCard
+              title="Available Balance"
+              value={`$${(financials?.balance || 0).toFixed(2)}`}
+              description="Ready to withdraw"
+              icon={<Wallet className="h-5 w-5" />}
+            />
+            <ProfessionalMetricCard
+              title="Pending Earnings"
+              value={`$${(financials?.pendingEarnings || 0).toFixed(2)}`}
+              description="Processing (3-5 days)"
+              icon={<DollarSign className="h-5 w-5" />}
+            />
+            <ProfessionalMetricCard
+              title="Total Earnings"
+              value={`$${(financials?.totalEarnings || 0).toFixed(2)}`}
+              description="Lifetime earnings"
+              icon={<CreditCard className="h-5 w-5" />}
+            />
+            <ProfessionalMetricCard
+              title="Admin Fee"
+              value="20%"
+              description={`$${(financials?.platformFees || 0).toFixed(2)} total fees`}
+              icon={<PiggyBank className="h-5 w-5" />}
+            />
+          </>
+        )}
       </div>
       
       <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
