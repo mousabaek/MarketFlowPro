@@ -72,6 +72,13 @@ export const users = pgTable("users", {
   githubId: text("github_id").unique(),
   appleId: text("apple_id").unique(),
   provider: text("provider"), // "local", "google", "github", "apple"
+  subscriptionStatus: text("subscription_status").default("none"), // "none", "trial", "active", "cancelled", "expired"
+  subscriptionPlan: text("subscription_plan"), // "monthly", "yearly", "premium"
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  trialUsed: boolean("trial_used").default(false),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }).default("80.00"), // User keeps 80% by default
+  maxWorkflows: integer("max_workflows"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow()
 });
@@ -135,6 +142,46 @@ export const platformEarnings = pgTable("platform_earnings", {
   updatedAt: timestamp("updated_at").defaultNow()
 });
 
+// Subscription schema
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  status: text("status").notNull(), // "trial", "active", "cancelled", "expired"
+  plan: text("plan").notNull(), // "monthly", "yearly", "premium"
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  paymentMethodId: integer("payment_method_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Subscription plans
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  billingCycle: text("billing_cycle").notNull(), // "monthly", "yearly"
+  features: jsonb("features").notNull().default({}),
+  maxWorkflows: integer("max_workflows").notNull(),
+  maxPlatforms: integer("max_platforms").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
+// Platform settings
+export const platformSettings = pgTable("platform_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
 // Insert schemas
 export const insertPlatformSchema = createInsertSchema(platforms).omit({ id: true });
 export const insertWorkflowSchema = createInsertSchema(workflows).omit({ id: true });
@@ -145,6 +192,9 @@ export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit
 export const insertWithdrawalSchema = createInsertSchema(withdrawals).omit({ id: true, processedAt: true, completedAt: true });
 export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true });
 export const insertPlatformEarningSchema = createInsertSchema(platformEarnings).omit({ id: true, updatedAt: true });
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPlatformSettingSchema = createInsertSchema(platformSettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type Platform = typeof platforms.$inferSelect;
@@ -173,6 +223,15 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
 export type PlatformEarning = typeof platformEarnings.$inferSelect;
 export type InsertPlatformEarning = z.infer<typeof insertPlatformEarningSchema>;
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
 
 // Validation schemas for API requests
 export const platformConnectionSchema = z.object({
@@ -216,4 +275,12 @@ export const withdrawalRequestSchema = z.object({
     required_error: "Payment method is required",
   }),
   accountDetails: z.string().optional()
+});
+
+// Validation schema for subscription
+export const subscriptionRequestSchema = z.object({
+  plan: z.enum(["monthly_basic", "yearly_basic", "monthly_premium"], {
+    required_error: "Subscription plan is required",
+  }),
+  paymentMethodId: z.number().optional()
 });

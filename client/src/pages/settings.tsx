@@ -29,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { useTooltips } from "@/contexts/tooltip-context";
+import { useTooltip } from "@/contexts/tooltip-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -69,7 +69,7 @@ const notificationSettingsSchema = z.object({
 
 export default function Settings() {
   const { toast } = useToast();
-  const { tooltipsEnabled, toggleTooltips, resetAllTooltips } = useTooltips();
+  const { tooltipsEnabled, toggleTooltips, resetAllTooltips } = useTooltip();
   const [activeTab, setActiveTab] = useState("account");
   
   // Profile form

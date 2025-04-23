@@ -2,7 +2,7 @@
  * Seeds the database with initial data
  */
 import { db } from './db';
-import { users, platforms } from '@shared/schema';
+import { users, platforms, platformSettings, subscriptionPlans } from '@shared/schema';
 import { scrypt, randomBytes } from 'crypto';
 import { promisify } from 'util';
 import { sql } from 'drizzle-orm';
@@ -100,6 +100,97 @@ async function seed() {
   // Insert each platform individually
   for (const platform of platformsData) {
     await db.insert(platforms).values(platform);
+  }
+  
+  // Create platform settings
+  console.log('Creating platform settings...');
+  const settingsData = [
+    {
+      key: "admin_email",
+      value: "mousa.baek90@gmail.com",
+      description: "Email address of the platform administrator"
+    },
+    {
+      key: "default_commission_rate",
+      value: "20",
+      description: "Default commission rate for the platform (percentage)"
+    },
+    {
+      key: "trial_period_days",
+      value: "3",
+      description: "Number of days for the free trial period"
+    },
+    {
+      key: "min_withdrawal_amount",
+      value: "50",
+      description: "Minimum amount required for withdrawal requests (USD)"
+    },
+    {
+      key: "withdrawal_processing_hours",
+      value: "24",
+      description: "Number of hours to process a withdrawal request"
+    }
+  ];
+  
+  for (const setting of settingsData) {
+    await db.insert(platformSettings).values(setting);
+  }
+  
+  // Create subscription plans
+  console.log('Creating subscription plans...');
+  const plansData = [
+    {
+      name: "monthly_basic",
+      displayName: "Monthly Basic",
+      description: "Standard monthly subscription with basic features",
+      price: "39.99",
+      billingCycle: "monthly",
+      features: JSON.stringify([
+        "Access to all platforms",
+        "Up to 5 workflows",
+        "Basic AI story generation",
+        "Standard support"
+      ]),
+      maxWorkflows: 5,
+      isActive: true
+    },
+    {
+      name: "yearly_basic",
+      displayName: "Annual Basic",
+      description: "Standard yearly subscription with basic features (save 16%)",
+      price: "399.90",
+      billingCycle: "yearly",
+      features: JSON.stringify([
+        "Access to all platforms",
+        "Up to 10 workflows",
+        "Basic AI story generation",
+        "Standard support",
+        "Annual billing (save 16%)"
+      ]),
+      maxWorkflows: 10,
+      isActive: true
+    },
+    {
+      name: "premium",
+      displayName: "Premium",
+      description: "Premium monthly subscription with advanced features",
+      price: "75.00",
+      billingCycle: "monthly",
+      features: JSON.stringify([
+        "Access to all platforms",
+        "Unlimited workflows",
+        "Advanced AI story generation",
+        "Priority support",
+        "Custom branding options",
+        "Access to beta features"
+      ]),
+      maxWorkflows: 999, // Effectively unlimited
+      isActive: true
+    }
+  ];
+  
+  for (const plan of plansData) {
+    await db.insert(subscriptionPlans).values(plan);
   }
   
   console.log('Seed process completed successfully!');

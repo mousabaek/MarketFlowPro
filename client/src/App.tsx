@@ -30,6 +30,7 @@ import AdminDashboard from "./pages/admin-dashboard";
 import WebSocketTestPage from "./pages/websocket-test";
 import CollaborationPage from "./pages/collaboration";
 import StoryGeneratorPage from "./pages/story-generator";
+import AnalyticsPage from "./pages/analytics-page";
 
 // Admin route component with role check
 function AdminRoute({ component: Component }: { component: () => React.JSX.Element }) {
@@ -80,6 +81,7 @@ function Router() {
     location === "/workflows" ||
     location === "/connections" ||
     location === "/payments" ||
+    location === "/analytics" ||
     location === "/opportunity-matcher" ||
     location.includes("/amazon-associates") ||
     location.includes("/etsy-platform") ||
@@ -92,6 +94,7 @@ function Router() {
       <ProtectedRoute path="/workflows" component={Workflows} />
       <ProtectedRoute path="/connections" component={Connections} />
       <ProtectedRoute path="/payments" component={PaymentsPage} />
+      <ProtectedRoute path="/analytics" component={AnalyticsPage} />
       <ProtectedRoute path="/platforms/:id" component={PlatformDetails} />
       <ProtectedRoute path="/amazon-associates/:id" component={AmazonAssociatesPage} />
       <ProtectedRoute path="/etsy-platform/:id" component={EtsyPlatform} />

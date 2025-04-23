@@ -74,6 +74,27 @@ export interface IStorage {
 
   // Earnings operations
   recordPlatformEarning(earning: InsertPlatformEarning): Promise<PlatformEarning>;
+  
+  // Subscription operations
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
+  getSubscriptionPlanByName(name: string): Promise<SubscriptionPlan | undefined>;
+  getUserSubscription(userId: number): Promise<Subscription | undefined>;
+  getUserActiveSubscription(userId: number): Promise<Subscription | undefined>;
+  createSubscription(subscription: InsertSubscription): Promise<Subscription>;
+  updateSubscription(id: number, data: Partial<Subscription>): Promise<Subscription | undefined>;
+  cancelUserSubscription(userId: number): Promise<Subscription | undefined>;
+  
+  // Trial management
+  startUserTrial(userId: number): Promise<User | undefined>;
+  
+  // Platform settings
+  getPlatformSetting(key: string): Promise<string | undefined>;
+  setPlatformSetting(key: string, value: string, description?: string): Promise<PlatformSetting>;
+  
+  // Admin operations
+  isUserAdmin(userId: number): Promise<boolean>;
+  getAdminEmail(): Promise<string | undefined>;
 }
 
 // In-memory storage implementation

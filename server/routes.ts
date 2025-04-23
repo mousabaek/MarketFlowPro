@@ -13,6 +13,9 @@ import { ClickBankController } from "./controllers/clickbank-controller";
 import { AIController } from "./controllers/ai-controller";
 import { OpportunityMatcherController } from "./controllers/opportunity-matcher-controller";
 import { PaymentController } from "./controllers/payment-controller";
+import { SubscriptionController } from "./controllers/subscription-controller";
+import { AdminController } from "./controllers/admin-controller";
+import { ReportingController } from "./controllers/reporting-controller";
 import { setupAuth } from "./auth";
 import { seed } from "./seed";
 
@@ -260,6 +263,237 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/payments/methods/:id", PaymentController.updatePaymentMethod);
   app.delete("/api/payments/methods/:id", PaymentController.deletePaymentMethod);
   
+  // Subscription Routes
+  const subscriptionController = new SubscriptionController();
+  
+  // Get subscription plans
+  app.get("/api/subscription/plans", async (req, res) => {
+    try {
+      const plans = await subscriptionController.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Start free trial
+  app.post("/api/subscription/trial", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const user = await subscriptionController.startTrial(req.user.id);
+      res.json({
+        success: true,
+        subscription: {
+          status: user.subscriptionStatus,
+          plan: "trial",
+          startDate: user.subscriptionStartDate,
+          endDate: user.subscriptionEndDate
+        }
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+  
+  // Create subscription
+  app.post("/api/subscription", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const subscription = await subscriptionController.createSubscription(req.user.id, req.body);
+      res.json({
+        success: true,
+        subscription
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      res.status(400).json({ error: error.message });
+    }
+  });
+  
+  // Cancel subscription
+  app.post("/api/subscription/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const subscription = await subscriptionController.cancelSubscription(req.user.id);
+      res.json({
+        success: true,
+        subscription
+      });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+  
+  // Get subscription information for current user
+  app.get("/api/subscription", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const subscription = await storage.getUserActiveSubscription(req.user.id);
+      if (!subscription) {
+        return res.json({
+          status: req.user.subscriptionStatus || "none",
+          plan: req.user.subscriptionPlan || null,
+          startDate: req.user.subscriptionStartDate || null,
+          endDate: req.user.subscriptionEndDate || null
+        });
+      }
+      res.json(subscription);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Admin-only subscription management routes
+  app.get("/api/admin/subscriptions", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const isAdmin = await subscriptionController.isUserAdmin(req.user.id);
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      
+      // This would be implemented in the database storage to get all subscriptions
+      // This is a placeholder until we add that method
+      const adminEmail = await storage.getPlatformSetting("admin_email");
+      
+      res.json({
+        success: true,
+        message: `Admin access granted for ${adminEmail}`,
+        // subscriptions would be listed here
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Admin verification route
+  app.get("/api/admin/verify", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      // Check if the user's email matches the admin email in the system
+      const adminEmail = await storage.getPlatformSetting("admin_email");
+      
+      if (req.user.email !== adminEmail) {
+        return res.status(403).json({ 
+          isAdmin: false,
+          message: "You don't have administrator privileges"
+        });
+      }
+      
+      // Update user role to admin if not already set
+      if (req.user.role !== "admin") {
+        await storage.updateUser(req.user.id, { role: "admin" });
+      }
+      
+      res.json({
+        isAdmin: true,
+        email: req.user.email,
+        message: "Administrator privileges confirmed"
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Admin routes
+  const adminController = new AdminController();
+  
+  // Check admin auth middleware
+  const requireAdmin = async (req: Request, res: Response, next: Function) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const isAdmin = await adminController.isAuthorizedAdmin(req.user.id);
+      if (!isAdmin) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  };
+  
+  // Get all users (admin only)
+  app.get("/api/admin/users", requireAdmin, async (req, res) => {
+    try {
+      const users = await adminController.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Get user subscription status (admin only)
+  app.get("/api/admin/users/:userId/subscription", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const subscriptionStatus = await adminController.getUserSubscriptionStatus(userId);
+      res.json(subscriptionStatus);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid request" });
+    }
+  });
+  
+  // Update user subscription (admin only)
+  app.patch("/api/admin/users/:userId/subscription", requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const updatedUser = await adminController.updateUserSubscription(userId, req.body);
+      res.json({
+        success: true,
+        user: updatedUser
+      });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid request" });
+    }
+  });
+  
+  // Get platform settings (admin only)
+  app.get("/api/admin/settings", requireAdmin, async (req, res) => {
+    try {
+      const settings = await adminController.getPlatformSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Update platform settings (admin only)
+  app.patch("/api/admin/settings", requireAdmin, async (req, res) => {
+    try {
+      const updatedSettings = await adminController.updatePlatformSettings(req.body);
+      res.json({
+        success: true,
+        settings: updatedSettings
+      });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Invalid request" });
+    }
+  });
+  
   // WebSocket test endpoint
   app.get("/api/websocket-test", (req, res) => {
     res.json({
@@ -294,6 +528,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clientCount: count,
       message: `Broadcast sent to ${count} connected clients`
     });
+  });
+  
+  // Reporting Routes
+  const reportingController = new ReportingController();
+  
+  // User earnings by platform
+  app.get("/api/reports/earnings/platforms", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const period = req.query.period as string || 'last30days';
+      const earnings = await reportingController.getUserEarningsByPlatform(req.user.id, period);
+      res.json(earnings);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // User earnings by time period
+  app.get("/api/reports/earnings/timeline", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const timeframe = req.query.timeframe as string || 'daily';
+      const count = parseInt(req.query.count as string || '7');
+      const earnings = await reportingController.getUserEarningsByPeriod(req.user.id, timeframe, count);
+      res.json(earnings);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Workflow performance
+  app.get("/api/reports/workflows/performance", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const period = req.query.period as string || 'last30days';
+      const performance = await reportingController.getWorkflowPerformance(req.user.id, period);
+      res.json(performance);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Platform analytics
+  app.get("/api/reports/platforms/:platformId/analytics", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const platformId = parseInt(req.params.platformId);
+      const period = req.query.period as string || 'last30days';
+      const analytics = await reportingController.getPlatformAnalytics(platformId, period);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // System performance (visible to all users)
+  app.get("/api/reports/system/performance", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    try {
+      const period = req.query.period as string || 'last30days';
+      const systemPerformance = await reportingController.getSystemPerformance(period);
+      res.json(systemPerformance);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Admin-only: User metrics
+  app.get("/api/admin/reports/users", requireAdmin, async (req, res) => {
+    try {
+      const period = req.query.period as string || 'last30days';
+      const limit = parseInt(req.query.limit as string || '10');
+      const userMetrics = await reportingController.getUserMetrics(period, limit);
+      res.json(userMetrics);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
+  });
+  
+  // Admin-only: Platform earnings report
+  app.get("/api/admin/reports/platforms/earnings", requireAdmin, async (req, res) => {
+    try {
+      const period = req.query.period as string || 'last30days';
+      const earningsReport = await reportingController.getPlatformEarningsReport(period);
+      res.json(earningsReport);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "Server error" });
+    }
   });
   
   // Theme configuration routes

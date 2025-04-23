@@ -9,7 +9,10 @@ import {
   paymentMethods, PaymentMethod, InsertPaymentMethod,
   withdrawals, Withdrawal, InsertWithdrawal,
   transactions, InsertTransaction,
-  platformEarnings, PlatformEarning, InsertPlatformEarning
+  platformEarnings, PlatformEarning, InsertPlatformEarning,
+  subscriptions, Subscription, InsertSubscription,
+  subscriptionPlans, SubscriptionPlan, InsertSubscriptionPlan,
+  platformSettings, PlatformSetting, InsertPlatformSetting
 } from '@shared/schema';
 import { IStorage } from './storage';
 
@@ -404,8 +407,13 @@ export class DatabaseStorage implements IStorage {
     
     if (existingEarning) {
       // Update existing record
-      const newAmount = parseFloat(existingEarning.amount.toString()) + parseFloat(earning.amount.toString());
-      const newCommissions = parseFloat(existingEarning.commissions.toString()) + parseFloat(earning.commissions.toString());
+      const existingAmount = existingEarning.amount ? parseFloat(existingEarning.amount.toString()) : 0;
+      const earningAmount = earning.amount ? parseFloat(earning.amount.toString()) : 0;
+      const newAmount = existingAmount + earningAmount;
+      
+      const existingCommissions = existingEarning.commissions ? parseFloat(existingEarning.commissions.toString()) : 0;
+      const earningCommissions = earning.commissions ? parseFloat(earning.commissions.toString()) : 0;
+      const newCommissions = existingCommissions + earningCommissions;
       
       const [updatedEarning] = await db
         .update(platformEarnings)
@@ -423,5 +431,229 @@ export class DatabaseStorage implements IStorage {
       const [newEarning] = await db.insert(platformEarnings).values(earning).returning();
       return newEarning;
     }
+  }
+
+  // Subscription operations
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
+  }
+
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async getSubscriptionPlanByName(name: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.name, name));
+    return plan;
+  }
+
+  async getUserSubscription(userId: number): Promise<Subscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .orderBy(desc(subscriptions.id))
+      .limit(1);
+    
+    return subscription;
+  }
+
+  async getUserActiveSubscription(userId: number): Promise<Subscription | undefined> {
+    const now = new Date();
+    
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.userId, userId),
+          eq(subscriptions.status, "active"),
+          gte(subscriptions.endDate, now)
+        )
+      )
+      .orderBy(desc(subscriptions.id))
+      .limit(1);
+    
+    return subscription;
+  }
+
+  async createSubscription(subscription: InsertSubscription): Promise<Subscription> {
+    // Update user's subscription status
+    await db
+      .update(users)
+      .set({
+        subscriptionStatus: subscription.status,
+        subscriptionPlan: subscription.plan,
+        subscriptionStartDate: subscription.startDate,
+        subscriptionEndDate: subscription.endDate,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, subscription.userId));
+    
+    // Create the subscription record
+    const [newSubscription] = await db.insert(subscriptions).values(subscription).returning();
+    
+    // If this is a trial, update the user's trial status
+    if (subscription.status === "trial") {
+      await db
+        .update(users)
+        .set({ trialUsed: true })
+        .where(eq(users.id, subscription.userId));
+    }
+    
+    return newSubscription;
+  }
+
+  async updateSubscription(id: number, data: Partial<Subscription>): Promise<Subscription | undefined> {
+    const [updatedSubscription] = await db
+      .update(subscriptions)
+      .set(data)
+      .where(eq(subscriptions.id, id))
+      .returning();
+    
+    // If status or dates were updated, sync with user record
+    if (data.status || data.startDate || data.endDate) {
+      const subscription = updatedSubscription || await this.getSubscription(id);
+      if (subscription) {
+        await db
+          .update(users)
+          .set({
+            subscriptionStatus: data.status || subscription.status,
+            subscriptionStartDate: data.startDate || subscription.startDate,
+            subscriptionEndDate: data.endDate || subscription.endDate,
+            updatedAt: new Date()
+          })
+          .where(eq(users.id, subscription.userId));
+      }
+    }
+    
+    return updatedSubscription;
+  }
+
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    const [subscription] = await db.select().from(subscriptions).where(eq(subscriptions.id, id));
+    return subscription;
+  }
+
+  async cancelUserSubscription(userId: number): Promise<Subscription | undefined> {
+    // Find active subscription
+    const subscription = await this.getUserActiveSubscription(userId);
+    if (!subscription) return undefined;
+    
+    // Update subscription status to cancelled
+    const [updatedSubscription] = await db
+      .update(subscriptions)
+      .set({
+        status: "cancelled",
+        updatedAt: new Date()
+      })
+      .where(eq(subscriptions.id, subscription.id))
+      .returning();
+    
+    // Update user record
+    await db
+      .update(users)
+      .set({
+        subscriptionStatus: "cancelled",
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+    
+    return updatedSubscription;
+  }
+
+  // Trial management
+  async startUserTrial(userId: number): Promise<User | undefined> {
+    // Get trial period days from settings
+    const settingValue = await this.getPlatformSetting("trial_period_days");
+    const trialDays = settingValue ? parseInt(settingValue) : 3; // Default to 3 days
+    
+    // Calculate start and end dates
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + trialDays);
+    
+    // Update user record
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        subscriptionStatus: "trial",
+        subscriptionStartDate: startDate,
+        subscriptionEndDate: endDate,
+        trialUsed: true,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    // Create a trial subscription record
+    await db.insert(subscriptions).values({
+      userId,
+      status: "trial",
+      plan: "monthly_basic", // Default to monthly plan for trial
+      amount: "0", // Free trial
+      startDate,
+      endDate,
+      paymentMethodId: null,
+      stripeSubscriptionId: null
+    });
+    
+    return updatedUser;
+  }
+
+  // Platform settings
+  async getPlatformSetting(key: string): Promise<string | undefined> {
+    const [setting] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, key));
+    
+    return setting?.value;
+  }
+
+  async setPlatformSetting(key: string, value: string, description?: string): Promise<PlatformSetting> {
+    // Check if setting exists
+    const [existingSetting] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, key));
+    
+    if (existingSetting) {
+      // Update existing setting
+      const [updatedSetting] = await db
+        .update(platformSettings)
+        .set({
+          value,
+          description: description || existingSetting.description,
+          updatedAt: new Date()
+        })
+        .where(eq(platformSettings.id, existingSetting.id))
+        .returning();
+      
+      return updatedSetting;
+    } else {
+      // Create new setting
+      const [newSetting] = await db
+        .insert(platformSettings)
+        .values({
+          key,
+          value,
+          description
+        })
+        .returning();
+      
+      return newSetting;
+    }
+  }
+
+  // Admin operations
+  async isUserAdmin(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    return user?.role === "admin";
+  }
+
+  async getAdminEmail(): Promise<string | undefined> {
+    return await this.getPlatformSetting("admin_email");
   }
 }
