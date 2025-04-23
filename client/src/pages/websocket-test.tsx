@@ -1,7 +1,7 @@
 import WebSocketTester from '../components/websocket-tester';
 import WebSocketStatus from '../components/websocket-status';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { Zap, Info, Server } from 'lucide-react';
 import { useWebSocketContext } from '../hooks/use-websocket-context';
 

@@ -1,29 +1,30 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
+import { ThemeProvider } from "./components/theme-provider";
 import { WebSocketProvider } from "./components/websocket-provider";
-import AppLayout from "@/layouts/app-layout";
-import ProfessionalLayout from "@/layouts/professional-layout";
-import Dashboard from "@/pages/dashboard";
-import ProfessionalDashboard from "@/pages/professional-dashboard";
-import Workflows from "@/pages/workflows";
-import Connections from "@/pages/connections";
-import PlatformDetails from "@/pages/platform-details";
-import Settings from "@/pages/settings";
-import NotFound from "@/pages/not-found";
-import Themes from "@/pages/themes";
-import ComponentShowcase from "@/pages/component-showcase";
-import OpportunityMatcherPage from "@/pages/opportunity-matcher";
-import AmazonAssociatesPage from "@/pages/amazon-associates";
-import EtsyPlatform from "@/pages/etsy-platform";
-import ClickBankPlatform from "@/pages/clickbank-platform";
-import AuthPage from "@/pages/auth-page";
-import PaymentsPage from "@/pages/payments";
-import AdminDashboard from "@/pages/admin-dashboard";
+import AppLayout from "./layouts/app-layout";
+import ProfessionalLayout from "./layouts/professional-layout";
+import Dashboard from "./pages/dashboard";
+import ProfessionalDashboard from "./pages/professional-dashboard";
+import Workflows from "./pages/workflows";
+import Connections from "./pages/connections";
+import PlatformDetails from "./pages/platform-details";
+import Settings from "./pages/settings";
+import NotFound from "./pages/not-found";
+import Themes from "./pages/themes";
+import ComponentShowcase from "./pages/component-showcase";
+import OpportunityMatcherPage from "./pages/opportunity-matcher";
+import AmazonAssociatesPage from "./pages/amazon-associates";
+import EtsyPlatform from "./pages/etsy-platform";
+import ClickBankPlatform from "./pages/clickbank-platform";
+import AuthPage from "./pages/auth-page";
+import PaymentsPage from "./pages/payments";
+import AdminDashboard from "./pages/admin-dashboard";
 import WebSocketTestPage from "./pages/websocket-test";
+import CollaborationPage from "./pages/collaboration";
 
 function Router() {
   // Get the current route to conditionally render layouts
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/themes" component={Themes} />
       <Route path="/showcase" component={ComponentShowcase} />
       <Route path="/websocket-test" component={WebSocketTestPage} />
+      <Route path="/collaboration" component={CollaborationPage} />
       <Route component={NotFound} />
     </Switch>
   );

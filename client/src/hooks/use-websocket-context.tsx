@@ -1,9 +1,33 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as WebSocketClient from '../lib/websocket';
 
+export interface CollaboratorInfo {
+  userId: string;
+  userName: string;
+  avatar?: string;
+  joinedAt: string;
+  lastActive?: string;
+}
+
+export interface CollaborationEvent {
+  id: string;
+  type: string;
+  user: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  timestamp: string;
+  action?: string;
+  target?: string;
+  details?: string;
+}
+
 export interface WebSocketContextType {
   isConnected: boolean;
   lastMessage: any;
+  collaborators: CollaboratorInfo[];
+  events: CollaborationEvent[];
   connectionStats: {
     messagesReceived: number;
     messagesSent: number;
@@ -12,12 +36,15 @@ export interface WebSocketContextType {
   };
   connectionError: Error | null;
   sendMessage: (message: string | object) => boolean;
+  sendCollaborationEvent: (type: string, action: string, target?: string, details?: string) => boolean;
   reconnect: () => void;
 }
 
 const defaultContextValue: WebSocketContextType = {
   isConnected: false,
   lastMessage: null,
+  collaborators: [],
+  events: [],
   connectionStats: {
     messagesReceived: 0,
     messagesSent: 0,
@@ -26,6 +53,7 @@ const defaultContextValue: WebSocketContextType = {
   },
   connectionError: null,
   sendMessage: () => false,
+  sendCollaborationEvent: () => false,
   reconnect: () => {}
 };
 
@@ -34,6 +62,8 @@ export const WebSocketContext = createContext<WebSocketContextType>(defaultConte
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
+  const [collaborators, setCollaborators] = useState<CollaboratorInfo[]>([]);
+  const [events, setEvents] = useState<CollaborationEvent[]>([]);
   const [connectionError, setConnectionError] = useState<Error | null>(null);
   const [connectionStats, setConnectionStats] = useState<{
     messagesReceived: number;
@@ -63,6 +93,60 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
       setLastMessage(data);
+      
+      // Process different types of messages
+      if (data && data.type) {
+        switch (data.type) {
+          case 'collaborators':
+            // Update collaborators list
+            if (Array.isArray(data.collaborators)) {
+              setCollaborators(data.collaborators);
+            }
+            break;
+          
+          case 'collaborator_joined':
+            // Add new collaborator to list
+            if (data.collaborator) {
+              setCollaborators(prev => {
+                // Check if already exists
+                const exists = prev.some(c => c.userId === data.collaborator.userId);
+                if (exists) return prev;
+                return [...prev, data.collaborator];
+              });
+              
+              // Add join event
+              if (data.event) {
+                setEvents(prev => [data.event, ...prev].slice(0, 50)); // Limit to 50 events
+              }
+            }
+            break;
+          
+          case 'collaborator_left':
+            // Remove collaborator from list
+            if (data.userId) {
+              setCollaborators(prev => prev.filter(c => c.userId !== data.userId));
+              
+              // Add leave event
+              if (data.event) {
+                setEvents(prev => [data.event, ...prev].slice(0, 50)); // Limit to 50 events
+              }
+            }
+            break;
+          
+          case 'activity':
+          case 'cursor_update':
+          case 'message':
+          case 'presence':
+            // Add event to events list
+            if (data.event) {
+              setEvents(prev => [data.event, ...prev].slice(0, 50)); // Limit to 50 events
+            }
+            break;
+            
+          default:
+            console.log('Unhandled message type:', data.type);
+        }
+      }
       
       setConnectionStats(prev => ({
         ...prev,
@@ -128,6 +212,19 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return result;
   };
 
+  // Send collaboration event
+  const sendCollaborationEvent = (type: string, action: string, target?: string, details?: string): boolean => {
+    const message = {
+      type: type,
+      action: action,
+      target: target || '',
+      details: details || '',
+      timestamp: new Date().toISOString()
+    };
+    
+    return sendMessage(message);
+  };
+
   // Reconnect WebSocket
   const reconnect = () => {
     WebSocketClient.closeWebSocket();
@@ -141,9 +238,12 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         isConnected,
         lastMessage,
+        collaborators,
+        events,
         connectionStats,
         connectionError,
         sendMessage,
+        sendCollaborationEvent,
         reconnect
       }}
     >

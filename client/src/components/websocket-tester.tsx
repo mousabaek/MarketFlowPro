@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
 import { useWebSocketContext } from '../hooks/use-websocket-context';
 import { Clipboard, Send, Zap, Terminal } from 'lucide-react';
 

@@ -1,17 +1,11 @@
-import { useEffect, useState, useContext } from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { WebSocketContext } from '../hooks/use-websocket-context';
+import { useEffect, useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Button } from './ui/button';
+import { useWebSocketContext } from '../hooks/use-websocket-context';
 
 export default function WebSocketStatus() {
-  const context = useContext(WebSocketContext);
-  
-  if (!context) {
-    console.error('WebSocketStatus must be used within a WebSocketProvider');
-    return null;
-  }
-  
-  const { isConnected, connectionStats, connectionError, reconnect } = context;
+  const websocketContext = useWebSocketContext();
+  const { isConnected, connectionStats, connectionError, reconnect } = websocketContext;
   const { reconnectAttempts } = connectionStats;
   const [isVisible, setIsVisible] = useState(false);
 

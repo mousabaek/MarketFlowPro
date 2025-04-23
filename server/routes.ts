@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 // We need to use the standard Node.js WebSocket types
-import { WebSocketServer, WebSocket } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { storage } from "./storage";
 import { platformConnectionSchema, workflowCreationSchema } from "@shared/schema";
 import { ZodError } from "zod";
@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // WebSocket connection handler
   wss.on('connection', (ws: WebSocket, req) => {
-    console.log('WebSocket connection established');
+    console.log('WebSocket connection established from', req.socket.remoteAddress);
     
     // Cast WebSocket to extended type
     const extendedWs = ws as ExtendedWebSocket;
@@ -455,13 +455,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const data = JSON.parse(message.toString());
         
         // Handle different message types
-        if (data.type === 'cursor_update') {
+        if (data.type === 'cursor_update' || data.type === 'cursor_position') {
           // Forward cursor updates to all clients
-          wss.clients.forEach((client) => {
-            if (client !== extendedWs && client.readyState === WebSocket.OPEN) {
-              client.send(message.toString());
-            }
-          });
+          const clientInfo = connectedClients.get(extendedWs.clientId);
+          if (clientInfo) {
+            wss.clients.forEach((client) => {
+              if (client !== extendedWs && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: 'cursor_position_broadcast',
+                  userId: extendedWs.clientId,
+                  userName: clientInfo.userName,
+                  position: data.position
+                }));
+              }
+            });
+          }
         } else if (data.type === 'user_action') {
           // Create and broadcast action event
           const clientInfo = connectedClients.get(extendedWs.clientId);
