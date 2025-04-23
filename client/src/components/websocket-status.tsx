@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { initWebSocket, closeWebSocket } from '@/lib/websocket';
-import { useWebSocketContext } from '@/hooks/use-websocket-context';
+import { WebSocketContext } from '../hooks/use-websocket-context';
 
-export function WebSocketStatus() {
-  const { isConnected, reconnectAttempts, connectionError } = useWebSocketContext();
+export default function WebSocketStatus() {
+  const context = useContext(WebSocketContext);
+  
+  if (!context) {
+    console.error('WebSocketStatus must be used within a WebSocketProvider');
+    return null;
+  }
+  
+  const { isConnected, connectionStats, connectionError, reconnect } = context;
+  const { reconnectAttempts } = connectionStats;
   const [isVisible, setIsVisible] = useState(false);
 
   // Show status message only after delay if connection issues persist
@@ -26,10 +33,7 @@ export function WebSocketStatus() {
   }, [isConnected, reconnectAttempts, connectionError]);
 
   const handleReconnect = () => {
-    closeWebSocket();
-    setTimeout(() => {
-      initWebSocket();
-    }, 500);
+    reconnect();
   };
 
   if (!isVisible) return null;

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useWebSocketContext } from '@/components/websocket-provider';
+import { useWebSocketContext } from '../../hooks/use-websocket-context';
 
 export interface CursorTrackerProps {
   userId: string;

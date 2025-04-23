@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as WebSocketClient from '@/lib/websocket';
+import * as WebSocketClient from '../lib/websocket';
 
-interface WebSocketContextType {
+export interface WebSocketContextType {
   isConnected: boolean;
   lastMessage: any;
   connectionStats: {

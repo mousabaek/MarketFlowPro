@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useWebSocketContext } from '@/components/websocket-provider';
+import { useWebSocketContext } from '../hooks/use-websocket-context';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, Check, Share2, UserPlus, Link as LinkIcon } from 'lucide-react';

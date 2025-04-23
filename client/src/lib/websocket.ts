@@ -43,10 +43,10 @@ export function initWebSocket(userInfo?: {
     // Determine protocol based on page protocol (http or https)
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     
-    // Build URL with user info as query parameters if provided
-    let host = window.location.host;
+    // Use the current hostname and port for WebSocket connection in Replit environment
+    const host = window.location.host;
     
-    // Build WebSocket URL - use the same host as the application
+    // Build WebSocket URL with correct path for server's WebSocket endpoint
     let wsUrl = `${protocol}//${host}/ws`;
     
     // Log connection attempt

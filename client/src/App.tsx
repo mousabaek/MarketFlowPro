@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import { WebSocketProvider } from "@/components/websocket-provider";
+import { WebSocketProvider } from "./components/websocket-provider";
 import AppLayout from "@/layouts/app-layout";
 import ProfessionalLayout from "@/layouts/professional-layout";
 import Dashboard from "@/pages/dashboard";
@@ -23,6 +23,7 @@ import ClickBankPlatform from "@/pages/clickbank-platform";
 import AuthPage from "@/pages/auth-page";
 import PaymentsPage from "@/pages/payments";
 import AdminDashboard from "@/pages/admin-dashboard";
+import WebSocketTestPage from "./pages/websocket-test";
 
 function Router() {
   // Get the current route to conditionally render layouts
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/themes" component={Themes} />
       <Route path="/showcase" component={ComponentShowcase} />
+      <Route path="/websocket-test" component={WebSocketTestPage} />
       <Route component={NotFound} />
     </Switch>
   );
