@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Set environment variables
-process.env.PORT = process.env.PORT || '5001';
+process.env.PORT = process.env.PORT || '5002'; // Changed from 5001 to avoid port conflicts
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 console.log('┌───────────────────────────────────────────┐');
