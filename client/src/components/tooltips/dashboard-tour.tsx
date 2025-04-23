@@ -17,7 +17,7 @@ const DashboardTour = () => {
           </TooltipText>
         </div>
       ),
-      position: 'bottom'
+      position: 'bottom' as TourPosition
     },
     {
       id: 'earnings',
@@ -31,7 +31,7 @@ const DashboardTour = () => {
           </TooltipText>
         </div>
       ),
-      position: 'bottom'
+      position: 'bottom' as TourPosition
     },
     {
       id: 'workflows',
@@ -45,7 +45,7 @@ const DashboardTour = () => {
           </TooltipText>
         </div>
       ),
-      position: 'right'
+      position: 'right' as TourPosition
     },
     {
       id: 'platforms',
@@ -64,7 +64,7 @@ const DashboardTour = () => {
           </TooltipList>
         </div>
       ),
-      position: 'left'
+      position: 'left' as TourPosition
     },
     {
       id: 'activity',
@@ -78,7 +78,7 @@ const DashboardTour = () => {
           </TooltipText>
         </div>
       ),
-      position: 'left'
+      position: 'left' as TourPosition
     },
     {
       id: 'navigation',
@@ -98,7 +98,7 @@ const DashboardTour = () => {
           </TooltipList>
         </div>
       ),
-      position: 'right'
+      position: 'right' as TourPosition
     },
     {
       id: 'next-steps',
@@ -116,7 +116,7 @@ const DashboardTour = () => {
           </TooltipText>
         </div>
       ),
-      position: 'bottom'
+      position: 'bottom' as TourPosition
     }
   ];
 

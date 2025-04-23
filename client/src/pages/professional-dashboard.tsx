@@ -18,8 +18,7 @@ import {
   Users,
   HelpCircle
 } from "lucide-react";
-import { ContextualTooltip } from "@/components/contextual-tooltip";
-import { useTooltips } from "@/contexts/tooltip-context";
+import { ContextualTooltip, hasSeenTooltip } from "@/components/contextual-tooltip";
 import WebSocketStatus from "@/components/websocket-status";
 import CollaborationSpace from "@/components/collaboration-space";
 import CollaborationSimulator from "@/components/collaboration-simulator";
@@ -37,7 +36,7 @@ export default function ProfessionalDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
   const metricsRef = useRef<HTMLDivElement>(null);
-  const { hasSeenTooltip } = useTooltips();
+
   
   // Fetch platforms
   const { data: platforms = [] } = useQuery<Platform[]>({
