@@ -29,6 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useTooltips } from "@/contexts/tooltip-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -38,7 +39,9 @@ import {
   Shield, 
   CreditCard, 
   Key, 
-  Save
+  Save,
+  HelpCircle,
+  RefreshCw
 } from "lucide-react";
 
 // User profile form schema
@@ -66,6 +69,7 @@ const notificationSettingsSchema = z.object({
 
 export default function Settings() {
   const { toast } = useToast();
+  const { tooltipsEnabled, toggleTooltips, resetAllTooltips } = useTooltips();
   const [activeTab, setActiveTab] = useState("account");
   
   // Profile form
@@ -429,6 +433,43 @@ export default function Settings() {
                   />
                 </form>
               </Form>
+              
+              <Separator className="my-6" />
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Guidance & Help</h3>
+                
+                <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <div className="text-base font-medium">Tooltips</div>
+                    <div className="text-sm text-muted-foreground">
+                      Show helpful tooltips for features and options.
+                    </div>
+                  </div>
+                  <Switch
+                    checked={tooltipsEnabled}
+                    onCheckedChange={toggleTooltips}
+                  />
+                </div>
+                
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={resetAllTooltips}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Reset All Tooltips
+                </Button>
+                
+                <div className="rounded-lg border p-3 bg-muted/50">
+                  <div className="flex items-start gap-2">
+                    <HelpCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="text-sm text-muted-foreground">
+                      Resetting tooltips will cause all helper tips to appear again. This is useful if you want to review features you might have missed.
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button form="notification-form" type="submit">

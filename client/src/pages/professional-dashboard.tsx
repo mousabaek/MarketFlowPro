@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { 
@@ -15,8 +15,11 @@ import {
   ArrowRightCircle,
   Plus,
   Wifi,
-  Users
+  Users,
+  HelpCircle
 } from "lucide-react";
+import { ContextualTooltip } from "@/components/contextual-tooltip";
+import { useTooltips } from "@/contexts/tooltip-context";
 import WebSocketStatus from "@/components/websocket-status";
 import CollaborationSpace from "@/components/collaboration-space";
 import CollaborationSimulator from "@/components/collaboration-simulator";
@@ -33,6 +36,8 @@ import {
 export default function ProfessionalDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
+  const metricsRef = useRef<HTMLDivElement>(null);
+  const { hasSeenTooltip } = useTooltips();
   
   // Fetch platforms
   const { data: platforms = [] } = useQuery<Platform[]>({
@@ -70,7 +75,27 @@ export default function ProfessionalDashboard() {
         
         <TabsContent value="overview" className="space-y-6">
           {/* Metrics Section */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 relative" ref={metricsRef}>
+            {/* Dashboard Welcome Tooltip */}
+            {!hasSeenTooltip('dashboard-welcome') && (
+              <div className="absolute -top-2 -right-2 z-10">
+                <ContextualTooltip
+                  id="dashboard-welcome"
+                  title="Welcome to Your Dashboard"
+                  position="right"
+                  width="320px"
+                >
+                  <p className="mb-2">
+                    Here you can track your performance across all connected platforms.
+                  </p>
+                  <p>
+                    The metrics cards show your current revenue, active workflows, 
+                    new opportunities, and conversion rates at a glance.
+                  </p>
+                </ContextualTooltip>
+              </div>
+            )}
+            
             <ProfessionalMetricCard
               title="Total Revenue"
               value="$1,284.56"
@@ -183,12 +208,31 @@ export default function ProfessionalDashboard() {
               icon={<TrendingUp className="h-6 w-6" />}
               onClick={() => setLocation("/workflows")}
             />
-            <ProfessionalActionCard
-              title="Add New Connection"
-              description="Connect to more platforms and services"
-              icon={<Link className="h-6 w-6" />}
-              onClick={() => setLocation("/connections")}
-            />
+            <div className="relative">
+              {/* Platform Connection Tooltip */}
+              {!hasSeenTooltip('platform-connection') && (
+                <div className="absolute -top-2 right-2 z-10">
+                  <ContextualTooltip
+                    id="platform-connection"
+                    title="Connect Your Platforms"
+                    position="top"
+                    width="300px"
+                  >
+                    <p>
+                      Connect to platforms like Amazon Associates, Etsy, ClickBank, 
+                      and more to automate your marketing workflows and maximize earnings.
+                    </p>
+                  </ContextualTooltip>
+                </div>
+              )}
+              
+              <ProfessionalActionCard
+                title="Add New Connection"
+                description="Connect to more platforms and services"
+                icon={<Link className="h-6 w-6" />}
+                onClick={() => setLocation("/connections")}
+              />
+            </div>
           </div>
         </TabsContent>
         

@@ -106,7 +106,13 @@ export default function AuthPage() {
       <div className="flex flex-col justify-center items-center w-full md:w-1/2 p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold">Wolf Auto Marketer</h1>
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/wolf-auto-marketer-logo-color.svg" 
+                alt="Wolf Auto Marketer" 
+                className="h-16" 
+              />
+            </div>
             <p className="text-muted-foreground mt-2">
               Sign in to your account to continue
             </p>

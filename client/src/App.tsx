@@ -2,7 +2,8 @@ import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { TooltipProvider as UITooltipProvider } from "./components/ui/tooltip";
+import { TooltipProvider } from "./contexts/tooltip-context";
 import { ThemeProvider } from "./components/theme-provider";
 import { WebSocketProvider } from "./components/websocket-provider";
 import { JoinNotification } from "./components/collaboration/join-notification";
@@ -138,9 +139,11 @@ function AppWithProviders() {
   return (
     <WebSocketProvider initialUserInfo={wsUserInfo}>
       <TooltipProvider>
-        <Toaster />
-        <JoinNotification />
-        <Router />
+        <UITooltipProvider>
+          <Toaster />
+          <JoinNotification />
+          <Router />
+        </UITooltipProvider>
       </TooltipProvider>
     </WebSocketProvider>
   );
